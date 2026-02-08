@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'services/mock_service.dart';
-import 'screens/splash_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:service_connect/router/app_router.dart';
+import 'package:service_connect/theme/app_theme.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  await MockService.initialize();
-
-  runApp(const ServiceConnectApp());
+void main() {
+  runApp(
+    const ProviderScope(
+      child: ServiceConnectApp(),
+    ),
+  );
 }
 
 class ServiceConnectApp extends StatelessWidget {
@@ -15,19 +16,11 @@ class ServiceConnectApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'ServiceConnect',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.white,
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF3B82F6),
-          primary: const Color(0xFF3B82F6),
-        ),
-      ),
-      home: const SplashScreen(),
+      theme: AppTheme.theme,
+      routerConfig: AppRouter.router,
     );
   }
 }

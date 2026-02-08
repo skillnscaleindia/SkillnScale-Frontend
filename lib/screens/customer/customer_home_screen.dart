@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
 import '../../services/mock_service.dart';
 import '../../models/service_category.dart';
 import '../../models/service_request.dart';
@@ -85,7 +86,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout, color: theme.colorScheme.onSurface.withOpacity(0.8)),
+            icon: Icon(LucideIcons.logOut, color: theme.colorScheme.onSurface.withOpacity(0.8)),
             onPressed: _signOut,
           ),
         ],
@@ -98,11 +99,11 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
+            icon: Icon(LucideIcons.house),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.list_alt),
+            icon: Icon(LucideIcons.list),
             label: 'My Requests',
           ),
         ],
@@ -123,7 +124,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 }
               },
               backgroundColor: theme.primaryColor,
-              icon: const Icon(Icons.add),
+              icon: const Icon(LucideIcons.plus),
               label: const Text('New Request'),
             )
           : null,
@@ -177,7 +178,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.inbox_outlined,
+              LucideIcons.inbox,
               size: 80,
               color: Colors.grey.shade400,
             ),
@@ -208,19 +209,19 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 IconData _getIconForCategory(String? iconName) {
   switch (iconName) {
     case 'plumbing':
-      return Icons.plumbing;
+      return LucideIcons.wrench;
     case 'electrical':
-      return Icons.electrical_services;
+      return LucideIcons.plug;
     case 'carpentry':
-      return Icons.construction;
+      return LucideIcons.hammer;
     case 'painting':
-      return Icons.format_paint;
+      return LucideIcons.paintRoller;
     case 'cleaning':
-      return Icons.cleaning_services;
+      return LucideIcons.sprayCan;
     case 'hvac':
-      return Icons.hvac;
+      return LucideIcons.airVent;
     default:
-      return Icons.build;
+      return LucideIcons.box;
   }
 }
 
@@ -349,7 +350,7 @@ class _RequestCard extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  Icons.location_on_outlined,
+                  LucideIcons.mapPin,
                   size: 16,
                   color: Colors.grey.shade600,
                 ),
