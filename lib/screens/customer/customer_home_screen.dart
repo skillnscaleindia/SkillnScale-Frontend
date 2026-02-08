@@ -12,20 +12,18 @@ class CustomerHomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Row(
+        title: const Row(
           children: [
-            const CircleAvatar(
-              child: Icon(LucideIcons.user),
-            ),
-            const SizedBox(width: 16),
-            const Column(
+            CircleAvatar(child: Icon(LucideIcons.user)),
+            SizedBox(width: 16),
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Current Location', style: TextStyle(fontSize: 12)),
                 Text('Bengaluru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ],
             ),
-            const Icon(Icons.arrow_drop_down),
+            Icon(Icons.arrow_drop_down),
           ],
         ),
       ),
@@ -57,19 +55,24 @@ class CustomerHomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             if (FakeData.hasActiveJob)
-              Card(
-                color: AppTheme.primaryColor,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      const Icon(LucideIcons.userCheck, color: Colors.white),
-                      const SizedBox(width: 16),
-                      const Text(
-                        'Pro Arriving in 5 mins',
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ],
+              InkWell( // WRAPPED IN INKWELL
+                onTap: () => context.push('/tracking'), // ADDED NAVIGATION
+                child: Card(
+                  color: AppTheme.primaryColor,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        const Icon(LucideIcons.userCheck, color: Colors.white),
+                        const SizedBox(width: 16),
+                        const Text(
+                          'Pro Arriving in 5 mins',
+                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        const Spacer(),
+                        const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+                      ],
+                    ),
                   ),
                 ),
               ),

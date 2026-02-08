@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:service_connect/screens/auth/customer_signup_screen.dart';
 import 'package:service_connect/screens/auth/professional_signup_screen.dart';
+import 'package:service_connect/screens/auth/sign_in_screen.dart'; // Import this
 import 'package:service_connect/screens/customer/booking_history_screen.dart';
 import 'package:service_connect/screens/customer/chat_screen.dart';
 import 'package:service_connect/screens/customer/create_request_screen.dart';
@@ -29,6 +30,11 @@ class AppRouter {
       GoRoute(
         path: '/',
         builder: (context, state) => const LandingScreen(),
+      ),
+      // ADDED: Login Route
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const SignInScreen(),
       ),
       GoRoute(
         path: '/signup/customer',

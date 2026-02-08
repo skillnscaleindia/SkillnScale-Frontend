@@ -74,10 +74,9 @@ class LandingScreen extends StatelessWidget {
               ),
             ),
           ),
+          // UPDATED: Now links to Login
           TextButton(
-            onPressed: () {
-              // TODO: Implement Sign In
-            },
+            onPressed: () => context.push('/login'),
             child: const Text('Already have an account? Sign In'),
           ),
           const SizedBox(height: 50),
