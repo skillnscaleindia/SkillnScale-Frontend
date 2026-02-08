@@ -37,7 +37,7 @@ class CustomerShell extends StatelessWidget {
     final String location = route.routerDelegate.currentConfiguration.uri.toString();
     if (location.startsWith('/home')) {
       return 0;
-    } else if (location.startsWith('/bookings')) {
+    } else if (location.startsWith('/history')) {
       return 1;
     } else if (location.startsWith('/profile')) {
       return 2;
@@ -51,10 +51,10 @@ class CustomerShell extends StatelessWidget {
         context.go('/home');
         break;
       case 1:
-        // TODO: Create Bookings Screen
+        context.go('/history');
         break;
       case 2:
-        // TODO: Create Profile Screen
+        context.go('/profile/customer');
         break;
     }
   }

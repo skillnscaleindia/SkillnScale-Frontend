@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:service_connect/screens/auth/customer_signup_screen.dart';
 import 'package:service_connect/screens/auth/professional_signup_screen.dart';
+import 'package:service_connect/screens/customer/booking_history_screen.dart';
 import 'package:service_connect/screens/customer/chat_screen.dart';
 import 'package:service_connect/screens/customer/create_request_screen.dart';
 import 'package:service_connect/screens/customer/customer_home_screen.dart';
+import 'package:service_connect/screens/customer/customer_profile_screen.dart';
 import 'package:service_connect/screens/customer/customer_shell.dart';
 import 'package:service_connect/screens/customer/payment_screen.dart';
 import 'package:service_connect/screens/customer/quotes_screen.dart';
@@ -15,6 +17,7 @@ import 'package:service_connect/screens/landing_screen.dart';
 import 'package:service_connect/screens/pro/pro_active_job_screen.dart';
 import 'package:service_connect/screens/pro/pro_dashboard_screen.dart';
 import 'package:service_connect/screens/pro/pro_job_details_screen.dart';
+import 'package:service_connect/screens/pro/pro_profile_screen.dart';
 
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -58,6 +61,14 @@ class AppRouter {
             path: '/review',
             builder: (context, state) => const ReviewScreen(),
           ),
+          GoRoute(
+            path: '/profile/customer',
+            builder: (context, state) => const CustomerProfileScreen(),
+          ),
+          GoRoute(
+            path: '/history',
+            builder: (context, state) => const BookingHistoryScreen(),
+          ),
         ],
       ),
       GoRoute(
@@ -83,6 +94,10 @@ class AppRouter {
       GoRoute(
         path: '/pro/active',
         builder: (context, state) => const ProActiveJobScreen(),
+      ),
+      GoRoute(
+        path: '/profile/pro',
+        builder: (context, state) => const ProProfileScreen(),
       ),
     ],
   );
