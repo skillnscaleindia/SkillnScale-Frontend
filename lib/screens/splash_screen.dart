@@ -31,19 +31,18 @@ class _SplashScreenState extends State<SplashScreen> {
       if (profile != null) {
         if (!mounted) return;
 
-        if (profile.isCustomer) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => const CustomerHomeScreen(),
-            ),
-          );
-        } else {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => const ProfessionalHomeScreen(),
-            ),
-          );
-        }
+        Widget homeScreen = profile.isCustomer
+            ? const CustomerHomeScreen()
+            : const ProfessionalHomeScreen();
+
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => homeScreen,
+            transitionsBuilder: (_, animation, __, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          ),
+        );
         return;
       }
     }
@@ -51,8 +50,11 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const WelcomeScreen(),
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => const WelcomeScreen(),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
       ),
     );
   }

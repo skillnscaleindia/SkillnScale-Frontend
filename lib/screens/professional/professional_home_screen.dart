@@ -24,26 +24,31 @@ class _ProfessionalHomeScreenState extends State<ProfessionalHomeScreen> {
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-
     try {
       final pendingRequests = await MockService.getPendingRequests();
       final user = MockService.currentUser;
-
       if (user != null) {
         final myJobs = await MockService.getProfessionalRequests(user.id);
-        setState(() {
-          _availableRequests = pendingRequests;
-          _myJobs = myJobs;
-        });
+        if (mounted) {
+          setState(() {
+            _availableRequests = pendingRequests;
+            _myJobs = myJobs;
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading data: $e')),
+          const SnackBar(
+            content: Text('Failed to load data. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -57,14 +62,20 @@ class _ProfessionalHomeScreenState extends State<ProfessionalHomeScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Request accepted successfully')),
+        const SnackBar(
+          content: Text('Request accepted successfully'),
+          backgroundColor: Colors.green,
+        ),
       );
 
       _loadData();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        const SnackBar(
+          content: Text('Failed to accept request. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -72,28 +83,35 @@ class _ProfessionalHomeScreenState extends State<ProfessionalHomeScreen> {
   Future<void> _signOut() async {
     await MockService.signOut();
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+    Navigator.of(context).pushAndRemoveUntil(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => const WelcomeScreen(),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+      (route) => false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'ServiceConnect Pro',
-          style: TextStyle(
-            color: Color(0xFF1F2937),
+          style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: Color(0xFF1F2937)),
+            icon: Icon(Icons.logout, color: theme.colorScheme.onSurface.withOpacity(0.8)),
             onPressed: _signOut,
           ),
         ],
@@ -103,7 +121,7 @@ class _ProfessionalHomeScreenState extends State<ProfessionalHomeScreen> {
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
         selectedItemColor: const Color(0xFF10B981),
-        unselectedItemColor: const Color(0xFF9CA3AF),
+        unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.work_outline),
@@ -124,22 +142,19 @@ class _ProfessionalHomeScreenState extends State<ProfessionalHomeScreen> {
     }
 
     if (_availableRequests.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.inbox_outlined,
               size: 80,
-              color: Color(0xFF9CA3AF),
+              color: Colors.grey.shade400,
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
               'No available requests',
-              style: TextStyle(
-                fontSize: 18,
-                color: Color(0xFF6B7280),
-              ),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey.shade600),
             ),
           ],
         ),
@@ -168,22 +183,19 @@ class _ProfessionalHomeScreenState extends State<ProfessionalHomeScreen> {
     }
 
     if (_myJobs.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.work_off_outlined,
               size: 80,
-              color: Color(0xFF9CA3AF),
+              color: Colors.grey.shade400,
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
               'No jobs yet',
-              style: TextStyle(
-                fontSize: 18,
-                color: Color(0xFF6B7280),
-              ),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey.shade600),
             ),
           ],
         ),
@@ -215,12 +227,13 @@ class _RequestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Color(0xFFE5E7EB)),
+        side: BorderSide(color: Colors.grey.shade300),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -229,36 +242,26 @@ class _RequestCard extends StatelessWidget {
           children: [
             Text(
               request.title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1F2937),
-              ),
+              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               request.description,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF6B7280),
-              ),
+              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
             ),
             const SizedBox(height: 12),
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.location_on_outlined,
                   size: 16,
-                  color: Color(0xFF6B7280),
+                  color: Colors.grey.shade600,
                 ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     request.location,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF6B7280),
-                    ),
+                    style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
                   ),
                 ),
               ],
@@ -315,12 +318,13 @@ class _JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Color(0xFFE5E7EB)),
+        side: BorderSide(color: Colors.grey.shade300),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -333,11 +337,7 @@ class _JobCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     request.title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1F2937),
-                    ),
+                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
                 Container(
@@ -363,27 +363,21 @@ class _JobCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               request.description,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF6B7280),
-              ),
+              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.location_on_outlined,
                   size: 16,
-                  color: Color(0xFF6B7280),
+                  color: Colors.grey.shade600,
                 ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     request.location,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF6B7280),
-                    ),
+                    style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
                   ),
                 ),
               ],

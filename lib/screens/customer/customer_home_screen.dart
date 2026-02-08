@@ -26,54 +26,66 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-
     try {
       final categories = await MockService.getServiceCategories();
       final user = MockService.currentUser;
-
       if (user != null) {
         final requests = await MockService.getCustomerRequests(user.id);
-        setState(() {
-          _categories = categories;
-          _requests = requests;
-        });
+        if (mounted) {
+          setState(() {
+            _categories = categories;
+            _requests = requests;
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading data: $e')),
+          const SnackBar(
+            content: Text('Failed to load data. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   Future<void> _signOut() async {
     await MockService.signOut();
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+    Navigator.of(context).pushAndRemoveUntil(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => const WelcomeScreen(),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+      (route) => false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'ServiceConnect',
-          style: TextStyle(
-            color: Color(0xFF1F2937),
+          style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: Color(0xFF1F2937)),
+            icon: Icon(Icons.logout, color: theme.colorScheme.onSurface.withOpacity(0.8)),
             onPressed: _signOut,
           ),
         ],
@@ -82,8 +94,8 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
-        selectedItemColor: const Color(0xFF3B82F6),
-        unselectedItemColor: const Color(0xFF9CA3AF),
+        selectedItemColor: theme.primaryColor,
+        unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -99,15 +111,18 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
           ? FloatingActionButton.extended(
               onPressed: () async {
                 final result = await Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => CreateRequestScreen(categories: _categories),
+                  PageRouteBuilder(
+                    pageBuilder: (_, __, ___) => CreateRequestScreen(categories: _categories),
+                    transitionsBuilder: (_, animation, __, child) {
+                      return FadeTransition(opacity: animation, child: child);
+                    },
                   ),
                 );
                 if (result == true) {
                   _loadData();
                 }
               },
-              backgroundColor: const Color(0xFF3B82F6),
+              backgroundColor: theme.primaryColor,
               icon: const Icon(Icons.add),
               label: const Text('New Request'),
             )
@@ -116,6 +131,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   }
 
   Widget _buildHomeTab() {
+    final theme = Theme.of(context);
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -125,13 +141,9 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
+          Text(
             'Service Categories',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1F2937),
-            ),
+            style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           GridView.builder(
@@ -160,22 +172,19 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     }
 
     if (_requests.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.inbox_outlined,
               size: 80,
-              color: Color(0xFF9CA3AF),
+              color: Colors.grey.shade400,
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
               'No service requests yet',
-              style: TextStyle(
-                fontSize: 18,
-                color: Color(0xFF6B7280),
-              ),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey.shade600),
             ),
           ],
         ),
@@ -196,6 +205,25 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   }
 }
 
+IconData _getIconForCategory(String? iconName) {
+  switch (iconName) {
+    case 'plumbing':
+      return Icons.plumbing;
+    case 'electrical':
+      return Icons.electrical_services;
+    case 'carpentry':
+      return Icons.construction;
+    case 'painting':
+      return Icons.format_paint;
+    case 'cleaning':
+      return Icons.cleaning_services;
+    case 'hvac':
+      return Icons.hvac;
+    default:
+      return Icons.build;
+  }
+}
+
 class _CategoryCard extends StatelessWidget {
   final ServiceCategory category;
 
@@ -203,6 +231,7 @@ class _CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -222,23 +251,20 @@ class _CategoryCard extends StatelessWidget {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
+              color: theme.primaryColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
-              Icons.build,
+            child: Icon(
+              _getIconForCategory(category.icon),
               size: 30,
-              color: Color(0xFF3B82F6),
+              color: theme.primaryColor,
             ),
           ),
           const SizedBox(height: 12),
           Text(
             category.name,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1F2937),
-            ),
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -270,12 +296,13 @@ class _RequestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Color(0xFFE5E7EB)),
+        side: BorderSide(color: Colors.grey.shade300),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -288,11 +315,7 @@ class _RequestCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     request.title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1F2937),
-                    ),
+                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
                 Container(
@@ -320,27 +343,21 @@ class _RequestCard extends StatelessWidget {
               request.description,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF6B7280),
-              ),
+              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.location_on_outlined,
                   size: 16,
-                  color: Color(0xFF6B7280),
+                  color: Colors.grey.shade600,
                 ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     request.location,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF6B7280),
-                    ),
+                    style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
                   ),
                 ),
               ],

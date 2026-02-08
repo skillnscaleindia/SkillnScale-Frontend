@@ -134,10 +134,11 @@ flutter test
 
 ## Technology Stack
 
-- **Framework**: Flutter 3.0+
-- **Language**: Dart
+- **Framework**: Flutter (>=3.0.0 <4.0.0)
+- **Language**: Dart (>=3.0.0 <4.0.0)
 - **Backend**: Supabase
-- **Authentication**: Supabase Auth
+- **Authentication**: Supabase Auth (`supabase_flutter: ^2.5.0`)
+- **Environment Variables**: `flutter_dotenv: ^5.1.0`
 - **Database**: PostgreSQL (via Supabase)
 - **State Management**: StatefulWidget
 

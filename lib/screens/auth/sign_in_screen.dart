@@ -40,25 +40,25 @@ class _SignInScreenState extends State<SignInScreen> {
       if (!mounted) return;
 
       if (profile != null) {
-        if (profile.isCustomer) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => const CustomerHomeScreen(),
-            ),
-          );
-        } else {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => const ProfessionalHomeScreen(),
-            ),
-          );
-        }
+        final homeScreen = profile.isCustomer
+            ? const CustomerHomeScreen()
+            : const ProfessionalHomeScreen();
+
+        Navigator.of(context).pushAndRemoveUntil(
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => homeScreen,
+            transitionsBuilder: (_, animation, __, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          ),
+          (route) => false,
+        );
       }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${e.toString()}'),
+        const SnackBar(
+          content: Text('Sign-in failed. Please check your credentials.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -71,13 +71,14 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1F2937)),
+          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface.withOpacity(0.8)),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -90,20 +91,17 @@ class _SignInScreenState extends State<SignInScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 20),
-                const Text(
+                Text(
                   'Welcome Back',
-                  style: TextStyle(
-                    fontSize: 32,
+                  style: theme.textTheme.headlineLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1F2937),
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Sign in to continue',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Color(0xFF6B7280),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -122,7 +120,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email';
                     }
-                    if (!value.contains('@')) {
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
                       return 'Please enter a valid email';
                     }
                     return null;
@@ -156,6 +154,9 @@ class _SignInScreenState extends State<SignInScreen> {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your password';
                     }
+                    if (value.length < 6) {
+                      return 'Password must be at least 6 characters long';
+                    }
                     return null;
                   },
                 ),
@@ -163,7 +164,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 ElevatedButton(
                   onPressed: _isLoading ? null : _signIn,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3B82F6),
+                    backgroundColor: theme.primaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(

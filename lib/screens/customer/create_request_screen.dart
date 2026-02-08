@@ -33,7 +33,10 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
   Future<void> _createRequest() async {
     if (!_formKey.currentState!.validate() || _selectedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields')),
+        const SnackBar(
+          content: Text('Please fill all fields and select a category'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
@@ -56,14 +59,20 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Request created successfully')),
+        const SnackBar(
+          content: Text('Request created successfully'),
+          backgroundColor: Colors.green,
+        ),
       );
 
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        const SnackBar(
+          content: Text('Failed to create request. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) {
@@ -74,18 +83,20 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1F2937)),
+          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface.withOpacity(0.8)),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Create Service Request',
-          style: TextStyle(color: Color(0xFF1F2937)),
+          style: theme.textTheme.titleLarge,
         ),
       ),
       body: SingleChildScrollView(
@@ -95,13 +106,9 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 'Service Category',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1F2937),
-                ),
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<ServiceCategory>(
@@ -129,13 +136,9 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                 },
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Title',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1F2937),
-                ),
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               TextFormField(
@@ -154,13 +157,9 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                 },
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Description',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1F2937),
-                ),
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               TextFormField(
@@ -180,13 +179,9 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                 },
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Location',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1F2937),
-                ),
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               TextFormField(
@@ -209,7 +204,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
               ElevatedButton(
                 onPressed: _isLoading ? null : _createRequest,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3B82F6),
+                  backgroundColor: theme.primaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(

@@ -5,6 +5,17 @@ import 'auth/sign_up_screen.dart';
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
+  void _navigateTo(BuildContext context, Widget screen) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => screen,
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,11 +65,7 @@ class WelcomeScreen extends StatelessWidget {
                 iconColor: const Color(0xFF3B82F6),
                 iconBackground: const Color(0xFFEFF6FF),
                 onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const SignUpScreen(userType: 'customer'),
-                    ),
-                  );
+                  _navigateTo(context, const SignUpScreen(userType: 'customer'));
                 },
               ),
               const SizedBox(height: 16),
@@ -69,21 +76,13 @@ class WelcomeScreen extends StatelessWidget {
                 iconColor: const Color(0xFF10B981),
                 iconBackground: const Color(0xFFECFDF5),
                 onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const SignUpScreen(userType: 'professional'),
-                    ),
-                  );
+                  _navigateTo(context, const SignUpScreen(userType: 'professional'));
                 },
               ),
               const Spacer(),
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const SignInScreen(),
-                    ),
-                  );
+                  _navigateTo(context, const SignInScreen());
                 },
                 child: const Text(
                   'Already have an account? Sign In',
