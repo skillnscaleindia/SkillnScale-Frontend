@@ -1,0 +1,2 @@
+# SkillnScale-Frontend
+Front Repo
