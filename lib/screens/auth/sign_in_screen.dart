@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/supabase_service.dart';
+import '../../services/mock_service.dart';
 import '../customer/customer_home_screen.dart';
 import '../professional/professional_home_screen.dart';
 
@@ -30,12 +30,12 @@ class _SignInScreenState extends State<SignInScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await SupabaseService.signIn(
+      await MockService.signIn(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
-      final profile = await SupabaseService.getCurrentProfile();
+      final profile = await MockService.getCurrentProfile();
 
       if (!mounted) return;
 

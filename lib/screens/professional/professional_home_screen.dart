@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/supabase_service.dart';
+import '../../services/mock_service.dart';
 import '../../models/service_request.dart';
 import '../welcome_screen.dart';
 
@@ -26,11 +26,11 @@ class _ProfessionalHomeScreenState extends State<ProfessionalHomeScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final pendingRequests = await SupabaseService.getPendingRequests();
-      final user = SupabaseService.currentUser;
+      final pendingRequests = await MockService.getPendingRequests();
+      final user = MockService.currentUser;
 
       if (user != null) {
-        final myJobs = await SupabaseService.getProfessionalRequests(user.id);
+        final myJobs = await MockService.getProfessionalRequests(user.id);
         setState(() {
           _availableRequests = pendingRequests;
           _myJobs = myJobs;
@@ -49,10 +49,10 @@ class _ProfessionalHomeScreenState extends State<ProfessionalHomeScreen> {
 
   Future<void> _acceptRequest(ServiceRequest request) async {
     try {
-      final user = SupabaseService.currentUser;
+      final user = MockService.currentUser;
       if (user == null) throw Exception('User not authenticated');
 
-      await SupabaseService.acceptServiceRequest(request.id, user.id);
+      await MockService.acceptServiceRequest(request.id, user.id);
 
       if (!mounted) return;
 
@@ -70,7 +70,7 @@ class _ProfessionalHomeScreenState extends State<ProfessionalHomeScreen> {
   }
 
   Future<void> _signOut() async {
-    await SupabaseService.signOut();
+    await MockService.signOut();
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const WelcomeScreen()),

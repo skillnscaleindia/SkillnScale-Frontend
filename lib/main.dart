@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'services/supabase_service.dart';
+import 'services/mock_service.dart';
 import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await SupabaseService.initialize();
+  await MockService.initialize();
 
   runApp(const ServiceConnectApp());
 }

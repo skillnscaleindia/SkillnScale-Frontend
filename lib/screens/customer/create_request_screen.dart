@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/service_category.dart';
-import '../../services/supabase_service.dart';
+import '../../services/mock_service.dart';
 
 class CreateRequestScreen extends StatefulWidget {
   final List<ServiceCategory> categories;
@@ -41,10 +41,10 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final user = SupabaseService.currentUser;
+      final user = MockService.currentUser;
       if (user == null) throw Exception('User not authenticated');
 
-      await SupabaseService.createServiceRequest({
+      await MockService.createServiceRequest({
         'customer_id': user.id,
         'category_id': _selectedCategory!.id,
         'title': _titleController.text.trim(),

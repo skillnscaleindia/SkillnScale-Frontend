@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/supabase_service.dart';
+import '../../services/mock_service.dart';
 import '../customer/customer_home_screen.dart';
 import '../professional/professional_home_screen.dart';
 
@@ -39,7 +39,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await SupabaseService.signUp(
+      await MockService.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
         fullName: _fullNameController.text.trim(),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'welcome_screen.dart';
-import '../services/supabase_service.dart';
+import '../services/mock_service.dart';
 import 'customer/customer_home_screen.dart';
 import 'professional/professional_home_screen.dart';
 
@@ -23,10 +23,10 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (!mounted) return;
 
-    final user = SupabaseService.currentUser;
+    final user = MockService.currentUser;
 
     if (user != null) {
-      final profile = await SupabaseService.getCurrentProfile();
+      final profile = await MockService.getCurrentProfile();
 
       if (profile != null) {
         if (!mounted) return;

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/supabase_service.dart';
+import '../../services/mock_service.dart';
 import '../../models/service_category.dart';
 import '../../models/service_request.dart';
 import 'create_request_screen.dart';
@@ -28,11 +28,11 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final categories = await SupabaseService.getServiceCategories();
-      final user = SupabaseService.currentUser;
+      final categories = await MockService.getServiceCategories();
+      final user = MockService.currentUser;
 
       if (user != null) {
-        final requests = await SupabaseService.getCustomerRequests(user.id);
+        final requests = await MockService.getCustomerRequests(user.id);
         setState(() {
           _categories = categories;
           _requests = requests;
@@ -50,7 +50,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   }
 
   Future<void> _signOut() async {
-    await SupabaseService.signOut();
+    await MockService.signOut();
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const WelcomeScreen()),
