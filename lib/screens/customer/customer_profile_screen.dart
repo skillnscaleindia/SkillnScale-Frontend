@@ -5,6 +5,27 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 class CustomerProfileScreen extends StatelessWidget {
   const CustomerProfileScreen({super.key});
 
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Log Out?'),
+        content: const Text('Are you sure you want to log out?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Clear state here if using Riverpod
+              context.go('/');
+            },
+            child: const Text('Log Out', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -36,7 +57,7 @@ class CustomerProfileScreen extends StatelessWidget {
           ListTile(
             title: const Text('Logout', style: TextStyle(color: Colors.red)),
             leading: const Icon(LucideIcons.logOut, color: Colors.red),
-            onTap: () => context.go('/'),
+            onTap: () => _showLogoutDialog(context),
           ),
         ],
       ),

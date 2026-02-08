@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../services/mock_service.dart';
-import '../customer/customer_home_screen.dart';
-import '../professional/professional_home_screen.dart';
+import '../../providers/user_provider.dart';
 
-class SignUpScreen extends StatefulWidget {
+class SignUpScreen extends ConsumerStatefulWidget {
   final String userType;
 
   const SignUpScreen({
@@ -12,10 +13,10 @@ class SignUpScreen extends StatefulWidget {
   });
 
   @override
-  State<SignUpScreen> createState() => _SignUpScreenState();
+  ConsumerState<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> {
+class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -52,19 +53,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       if (!mounted) return;
 
-      final homeScreen = widget.userType == 'customer'
-          ? const CustomerHomeScreen()
-          : const ProfessionalHomeScreen();
-
-      Navigator.of(context).pushAndRemoveUntil(
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => homeScreen,
-          transitionsBuilder: (_, animation, __, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-        ),
-        (route) => false,
-      );
+      // Update Provider State
+      if (widget.userType == 'customer') {
+        ref.read(userRoleProvider.notifier).state = UserRole.customer;
+        context.go('/home');
+      } else {
+        ref.read(userRoleProvider.notifier).state = UserRole.pro;
+        context.go('/pro-dashboard');
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -92,7 +88,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface.withOpacity(0.8)),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(), // GoRouter pop
         ),
       ),
       body: SafeArea(
@@ -126,16 +122,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     labelText: 'Full Name',
                     hintText: 'Enter your full name',
                     prefixIcon: const Icon(Icons.person_outline),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your full name';
-                    }
-                    return null;
-                  },
+                  validator: (value) => (value == null || value.isEmpty) ? 'Enter full name' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -145,19 +134,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     labelText: 'Email',
                     hintText: 'Enter your email',
                     prefixIcon: const Icon(Icons.email_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                      return 'Please enter a valid email';
-                    }
-                    return null;
-                  },
+                  validator: (value) => (value == null || value.isEmpty || !value.contains('@')) ? 'Enter valid email' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -167,16 +146,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     labelText: 'Phone Number',
                     hintText: 'Enter your phone number',
                     prefixIcon: const Icon(Icons.phone_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your phone number';
-                    }
-                    return null;
-                  },
+                  validator: (value) => (value == null || value.isEmpty) ? 'Enter phone number' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -187,30 +159,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     hintText: 'Enter your password',
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
+                      icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a password';
-                    }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
-                    }
-                    return null;
-                  },
+                  validator: (value) => (value == null || value.length < 6) ? 'Min 6 chars' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -221,59 +175,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     hintText: 'Re-enter your password',
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureConfirmPassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscureConfirmPassword = !_obscureConfirmPassword;
-                        });
-                      },
+                      icon: Icon(_obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                      onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please confirm your password';
-                    }
-                    if (value != _passwordController.text) {
-                      return 'Passwords do not match';
-                    }
-                    return null;
-                  },
+                  validator: (value) => (value != _passwordController.text) ? 'Passwords mismatch' : null,
                 ),
                 const SizedBox(height: 32),
                 ElevatedButton(
                   onPressed: _isLoading ? null : _signUp,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
                   child: _isLoading
                       ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Text(
-                          'Create Account',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                          height: 20, width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)))
+                      : const Text('Create Account'),
                 ),
               ],
             ),

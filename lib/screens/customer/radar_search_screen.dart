@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,6 +11,7 @@ class RadarSearchScreen extends StatefulWidget {
 
 class _RadarSearchScreenState extends State<RadarSearchScreen> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  Timer? _timer;
 
   @override
   void initState() {
@@ -19,7 +21,7 @@ class _RadarSearchScreenState extends State<RadarSearchScreen> with SingleTicker
       duration: const Duration(seconds: 2),
     )..repeat();
 
-    Future.delayed(const Duration(seconds: 3), () {
+    _timer = Timer(const Duration(seconds: 3), () {
       if (mounted) {
         context.go('/quotes');
       }
@@ -29,6 +31,7 @@ class _RadarSearchScreenState extends State<RadarSearchScreen> with SingleTicker
   @override
   void dispose() {
     _controller.dispose();
+    _timer?.cancel(); // Cancel timer
     super.dispose();
   }
 
@@ -37,14 +40,35 @@ class _RadarSearchScreenState extends State<RadarSearchScreen> with SingleTicker
     return Scaffold(
       appBar: AppBar(
         title: const Text('Searching for Professionals'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () {
+            _timer?.cancel();
+            context.go('/home');
+          },
+        ),
       ),
       body: Center(
-        child: CustomPaint(
-          painter: RipplePainter(controller: _controller),
-          child: const SizedBox(
-            width: 200,
-            height: 200,
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CustomPaint(
+              painter: RipplePainter(controller: _controller),
+              child: const SizedBox(
+                width: 200,
+                height: 200,
+                child: Icon(Icons.home, size: 50, color: Colors.blue),
+              ),
+            ),
+            const SizedBox(height: 40),
+            OutlinedButton(
+              onPressed: () {
+                _timer?.cancel();
+                context.go('/home');
+              },
+              child: const Text('Cancel Request'),
+            ),
+          ],
         ),
       ),
     );

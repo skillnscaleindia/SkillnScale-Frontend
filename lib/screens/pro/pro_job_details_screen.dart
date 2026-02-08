@@ -14,6 +14,7 @@ class ProJobDetailsScreen extends StatefulWidget {
 }
 
 class _ProJobDetailsScreenState extends State<ProJobDetailsScreen> {
+  final TextEditingController _priceController = TextEditingController();
   double _duration = 1.0;
 
   @override
@@ -29,7 +30,7 @@ class _ProJobDetailsScreenState extends State<ProJobDetailsScreen> {
           Container(
             height: 200,
             color: AppTheme.lightGreyColor,
-            child: const Center(child: Text('Map Snippet')), // Placeholder for map
+            child: const Center(child: Text('Map Snippet (Customer Location)')),
           ),
           Expanded(
             child: SingleChildScrollView(
@@ -39,24 +40,31 @@ class _ProJobDetailsScreenState extends State<ProJobDetailsScreen> {
                 children: [
                   const Text('Price', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  const TextField(
+                  TextField(
+                    controller: _priceController,
                     keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: 'Enter your price',
+                    decoration: const InputDecoration(
+                      hintText: 'Enter your price (\$)',
+                      prefixText: '\$ ',
                     ),
                   ),
                   const SizedBox(height: 24),
                   const Text('Start Time', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  // Basic date/time picker for now
-                  ElevatedButton(
+                  ElevatedButton.icon(
                     onPressed: () => _selectDateTime(context),
-                    child: const Text('Select Start Time'),
+                    icon: const Icon(Icons.calendar_today),
+                    label: const Text('Select Start Time'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppTheme.primaryColor,
+                      side: const BorderSide(color: AppTheme.primaryColor),
+                    ),
                   ),
                   const SizedBox(height: 24),
                   const Text('Duration', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   SizedBox(
-                    height: 150,
+                    height: 120,
                     child: CupertinoPicker(
                       itemExtent: 40,
                       onSelectedItemChanged: (index) {
@@ -64,7 +72,7 @@ class _ProJobDetailsScreenState extends State<ProJobDetailsScreen> {
                           _duration = (index + 2) / 2.0;
                         });
                       },
-                      children: List.generate(5, (index) {
+                      children: List.generate(10, (index) {
                         final duration = (index + 2) / 2.0;
                         return Center(child: Text('$duration hours'));
                       }),
@@ -90,8 +98,14 @@ class _ProJobDetailsScreenState extends State<ProJobDetailsScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
+                  if (_priceController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please enter a price'), backgroundColor: Colors.red),
+                    );
+                    return;
+                  }
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Quote Sent')),
+                    const SnackBar(content: Text('Quote Sent Successfully'), backgroundColor: Colors.green),
                   );
                   context.pop();
                 },
@@ -111,14 +125,8 @@ class _ProJobDetailsScreenState extends State<ProJobDetailsScreen> {
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 30)),
     );
-    if (pickedDate != null) {
-      final TimeOfDay? pickedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
-      );
-      if (pickedTime != null) {
-        // Handle date and time selection
-      }
+    if (pickedDate != null && mounted) {
+      // Logic to store date would go here
     }
   }
 }
