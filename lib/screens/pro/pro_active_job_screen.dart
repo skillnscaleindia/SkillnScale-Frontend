@@ -11,26 +11,18 @@ class ProActiveJobScreen extends StatefulWidget {
 }
 
 class _ProActiveJobScreenState extends State<ProActiveJobScreen> {
-  final GlobalKey<SlideActionState> _slideKey = GlobalKey();
-  final TextEditingController _codeController = TextEditingController();
+  final _codeController = TextEditingController();
   Timer? _timer;
   int _seconds = 0;
-  bool _jobStarted = false;
+  bool _started = false;
 
-  void _startJob() {
+  void _start() {
     if (_codeController.text != '4589') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid Start Code'), backgroundColor: Colors.red),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid Code'), backgroundColor: Colors.red));
       return;
     }
-
-    setState(() => _jobStarted = true);
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        _seconds++;
-      });
-    });
+    setState(() => _started = true);
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) => setState(() => _seconds++));
   }
 
   @override
@@ -43,71 +35,31 @@ class _ProActiveJobScreenState extends State<ProActiveJobScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Active Job'),
-        automaticallyImplyLeading: false,
-      ),
+      appBar: AppBar(title: const Text('Active Job'), automaticallyImplyLeading: false),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            if (!_jobStarted) ...[
-              const Text("Ask customer for the Start Code", style: TextStyle(fontSize: 18)),
-              TextField(
-                controller: _codeController,
-                decoration: const InputDecoration(
-                  labelText: 'Enter Start Code',
-                  hintText: 'e.g. 4589',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 24, letterSpacing: 5),
-              ),
-              ElevatedButton(
-                onPressed: _startJob,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                ),
-                child: const Text('Verify & Start', style: TextStyle(fontSize: 18)),
-              ),
+            if (!_started) ...[
+              const Text("Ask customer for code (4589)", style: TextStyle(fontSize: 18)),
+              TextField(controller: _codeController, keyboardType: TextInputType.number, textAlign: TextAlign.center, style: const TextStyle(fontSize: 24, letterSpacing: 5)),
+              ElevatedButton(onPressed: _start, child: const Text('Verify & Start')),
             ] else ...[
-              Column(
-                children: [
-                  const Text("Job in Progress", style: TextStyle(fontSize: 20, color: Colors.green)),
-                  const SizedBox(height: 20),
-                  Text(
-                    _formatDuration(Duration(seconds: _seconds)),
-                    style: const TextStyle(fontSize: 60, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
+              Text('${Duration(seconds: _seconds).inMinutes}:${(Duration(seconds: _seconds).inSeconds % 60).toString().padLeft(2, '0')}', style: const TextStyle(fontSize: 60, fontWeight: FontWeight.bold)),
               SlideAction(
-                key: _slideKey,
                 onSubmit: () {
                   _timer?.cancel();
-                  context.go('/home'); // Or to a summary screen
+                  context.go('/home');
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Job Completed!")));
                   return null;
                 },
-                text: 'Slide to Finish Job',
-                innerColor: Colors.red,
-                outerColor: Colors.red.shade100,
+                text: 'Slide to Finish',
               ),
             ],
           ],
         ),
       ),
     );
-  }
-
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final hours = twoDigits(duration.inHours);
-    final minutes = twoDigits(duration.inMinutes.remainder(60));
-    final seconds = twoDigits(duration.inSeconds.remainder(60));
-    return [if (duration.inHours > 0) hours, minutes, seconds].join(':');
   }
 }

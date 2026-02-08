@@ -78,9 +78,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                     TextField(
                       controller: _descController,
                       maxLines: 4,
-                      decoration: const InputDecoration(
-                        hintText: 'Describe your issue...',
-                      ),
+                      decoration: const InputDecoration(hintText: 'Describe your issue...'),
                     ),
                     const SizedBox(height: 24),
                     const Text('Add Photos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -89,17 +87,12 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                       height: 100,
                       child: ListView(
                         scrollDirection: Axis.horizontal,
-                        children: List.generate(3, (index) {
-                          return Container(
-                            width: 100,
-                            margin: const EdgeInsets.only(right: 8),
-                            decoration: BoxDecoration(
-                              color: AppTheme.lightGreyColor,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(LucideIcons.camera, color: Colors.grey),
-                          );
-                        }),
+                        children: List.generate(3, (index) => Container(
+                          width: 100,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(color: AppTheme.lightGreyColor, borderRadius: BorderRadius.circular(12)),
+                          child: const Icon(LucideIcons.camera, color: Colors.grey),
+                        )),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -119,57 +112,18 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                         ),
                       ],
                     ),
-                    if (!_isImmediate) ...[
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        height: 80,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: 7,
-                          itemBuilder: (context, index) {
-                            final day = DateTime.now().add(Duration(days: index));
-                            return Container(
-                              width: 60,
-                              margin: const EdgeInsets.only(right: 8),
-                              decoration: BoxDecoration(
-                                color: AppTheme.lightGreyColor,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text('${day.day}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  Text(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][day.weekday - 1]),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
             ),
             Container(
               padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, -4),
-                  ),
-                ],
-              ),
+              decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -4))]),
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Request Posted!'), backgroundColor: Colors.green),
-                    );
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request Posted!'), backgroundColor: Colors.green));
                     context.push('/search');
                   },
                   child: const Text('Post Request'),

@@ -31,7 +31,7 @@ class _RadarSearchScreenState extends State<RadarSearchScreen> with SingleTicker
   @override
   void dispose() {
     _controller.dispose();
-    _timer?.cancel(); // Cancel timer
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -39,7 +39,7 @@ class _RadarSearchScreenState extends State<RadarSearchScreen> with SingleTicker
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Searching for Professionals'),
+        title: const Text('Searching...'),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () {
@@ -54,11 +54,7 @@ class _RadarSearchScreenState extends State<RadarSearchScreen> with SingleTicker
           children: [
             CustomPaint(
               painter: RipplePainter(controller: _controller),
-              child: const SizedBox(
-                width: 200,
-                height: 200,
-                child: Icon(Icons.home, size: 50, color: Colors.blue),
-              ),
+              child: const SizedBox(width: 200, height: 200, child: Icon(Icons.home, size: 50, color: Colors.blue)),
             ),
             const SizedBox(height: 40),
             OutlinedButton(
@@ -77,20 +73,16 @@ class _RadarSearchScreenState extends State<RadarSearchScreen> with SingleTicker
 
 class RipplePainter extends CustomPainter {
   final Animation<double> controller;
-
   RipplePainter({required this.controller}) : super(repaint: controller);
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
     final paint = Paint()..color = Colors.blue.withOpacity(1 - controller.value);
-
     for (int i = 0; i < 3; i++) {
-      final radius = (size.width / 2) * (controller.value + i) / 3;
-      canvas.drawCircle(center, radius, paint);
+      canvas.drawCircle(center, (size.width / 2) * (controller.value + i) / 3, paint);
     }
   }
-
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
