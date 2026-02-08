@@ -9,8 +9,10 @@ import 'package:service_connect/screens/customer/customer_shell.dart';
 import 'package:service_connect/screens/customer/payment_screen.dart';
 import 'package:service_connect/screens/customer/quotes_screen.dart';
 import 'package:service_connect/screens/customer/radar_search_screen.dart';
+import 'package:service_connect/screens/customer/review_screen.dart';
 import 'package:service_connect/screens/customer/tracking_screen.dart';
 import 'package:service_connect/screens/landing_screen.dart';
+import 'package:service_connect/screens/pro/pro_active_job_screen.dart';
 import 'package:service_connect/screens/pro/pro_dashboard_screen.dart';
 import 'package:service_connect/screens/pro/pro_job_details_screen.dart';
 
@@ -52,6 +54,10 @@ class AppRouter {
             path: '/quotes',
             builder: (context, state) => const QuotesScreen(),
           ),
+          GoRoute(
+            path: '/review',
+            builder: (context, state) => const ReviewScreen(),
+          ),
         ],
       ),
       GoRoute(
@@ -73,6 +79,10 @@ class AppRouter {
       GoRoute(
         path: '/pro/job-details/:id',
         builder: (context, state) => ProJobDetailsScreen(jobId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/pro/active',
+        builder: (context, state) => const ProActiveJobScreen(),
       ),
     ],
   );
