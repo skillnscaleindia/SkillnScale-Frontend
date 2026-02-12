@@ -1,97 +1,226 @@
 import 'package:flutter/material.dart';
-import 'package:service_connect/theme/app_theme.dart';
+import 'package:lucide_flutter/lucide_flutter.dart';
+import 'package:service_connect/theme/app_colors.dart';
 
 class BookingHistoryScreen extends StatelessWidget {
   const BookingHistoryScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('My Bookings'),
-          bottom: const TabBar(
-            labelColor: AppTheme.primaryColor,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: AppTheme.primaryColor,
-            tabs: [Tab(text: 'Active'), Tab(text: 'Completed'), Tab(text: 'Cancelled')],
+          bottom: TabBar(
+            tabs: const [
+              Tab(text: 'Active'),
+              Tab(text: 'Completed'),
+              Tab(text: 'Cancelled'),
+            ],
+            dividerColor: Colors.transparent,
+            indicator: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              color: AppColors.accent.withOpacity(0.1),
+            ),
+            indicatorSize: TabBarIndicatorSize.tab,
+            indicatorPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
           ),
         ),
         body: TabBarView(
           children: [
-            _buildList(BookingStatus.active),
-            _buildList(BookingStatus.completed),
-            _buildList(BookingStatus.cancelled),
+            _buildBookingList(context, 'active', theme),
+            _buildBookingList(context, 'completed', theme),
+            _buildBookingList(context, 'cancelled', theme),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildList(BookingStatus status) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(8),
-      itemCount: 3,
-      itemBuilder: (context, index) => HistoryCard(status: status),
-    );
-  }
-}
-
-enum BookingStatus { active, completed, cancelled }
-
-class HistoryCard extends StatelessWidget {
-  final BookingStatus status;
-  const HistoryCard({required this.status, super.key});
-
-  void _showDetails(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24.0),
+  Widget _buildBookingList(BuildContext context, String type, ThemeData theme) {
+    final bookings = _getMockBookings(type);
+    if (bookings.isEmpty) {
+      return Center(
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Job Details", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            const Text("Service: AC Repair", style: TextStyle(fontWeight: FontWeight.bold)),
-            const Text("Date: 24th July, 2024"),
-            const Text("Total: \$55.00", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            const SizedBox(height: 24),
-            SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text("Close"))),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      child: ListTile(
-        title: const Text('AC Repair', style: TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: const Text('24th July, 2024'),
-        trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('\$55', style: TextStyle(fontWeight: FontWeight.bold)),
-            _buildStatusChip(status),
+            Icon(
+              LucideIcons.calendar,
+              size: 56,
+              color: AppColors.lightSubtitle.withOpacity(0.4),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No $type bookings',
+              style: theme.textTheme.bodyMedium!.copyWith(
+                color: AppColors.lightSubtitle,
+              ),
+            ),
           ],
         ),
-        onTap: () => _showDetails(context),
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.all(20),
+      itemCount: bookings.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final booking = bookings[index];
+        return _buildBookingCard(context, booking, type, theme);
+      },
+    );
+  }
+
+  Widget _buildBookingCard(
+    BuildContext context,
+    Map<String, String> booking,
+    String type,
+    ThemeData theme,
+  ) {
+    final statusColor = type == 'active'
+        ? AppColors.info
+        : type == 'completed'
+            ? AppColors.success
+            : AppColors.error;
+
+    final statusIcon = type == 'active'
+        ? LucideIcons.clock
+        : type == 'completed'
+            ? Icons.check_circle_outline
+            : Icons.cancel_outlined;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.12)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _getServiceIcon(booking['service']!),
+                  size: 22,
+                  color: statusColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      booking['service']!,
+                      style: theme.textTheme.titleMedium!.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      booking['professional']!,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(statusIcon, size: 12, color: statusColor),
+                    const SizedBox(width: 4),
+                    Text(
+                      type[0].toUpperCase() + type.substring(1),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: statusColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.scaffoldBackgroundColor,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(LucideIcons.calendar, size: 14, color: AppColors.lightSubtitle),
+                    const SizedBox(width: 6),
+                    Text(booking['date']!, style: theme.textTheme.bodySmall),
+                  ],
+                ),
+                Text(
+                  booking['price']!,
+                  style: theme.textTheme.titleMedium!.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.accent,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildStatusChip(BookingStatus status) {
-    Color color = status == BookingStatus.active ? Colors.blue : (status == BookingStatus.completed ? Colors.green : Colors.red);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-      child: Text(status.name.toUpperCase(), style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.bold)),
-    );
+  IconData _getServiceIcon(String service) {
+    if (service.toLowerCase().contains('plumb')) return LucideIcons.wrench;
+    if (service.toLowerCase().contains('elect')) return LucideIcons.plug;
+    if (service.toLowerCase().contains('clean')) return LucideIcons.sparkles;
+    if (service.toLowerCase().contains('paint')) return LucideIcons.paintbrush;
+    if (service.toLowerCase().contains('ac')) return LucideIcons.thermometer;
+    return LucideIcons.wrench;
+  }
+
+  List<Map<String, String>> _getMockBookings(String type) {
+    if (type == 'active') {
+      return [
+        {'service': 'Plumbing Repair', 'professional': 'Rajesh Kumar', 'date': '12 Feb 2026', 'price': '\$50'},
+      ];
+    } else if (type == 'completed') {
+      return [
+        {'service': 'AC Service', 'professional': 'Suresh Singh', 'date': '8 Feb 2026', 'price': '\$75'},
+        {'service': 'Electrical Wiring', 'professional': 'Amit Patel', 'date': '2 Feb 2026', 'price': '\$120'},
+      ];
+    } else {
+      return [
+        {'service': 'House Cleaning', 'professional': 'Anjali Sharma', 'date': '29 Jan 2026', 'price': '\$40'},
+      ];
+    }
   }
 }

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
-import 'package:service_connect/theme/app_theme.dart';
+import 'package:service_connect/router/app_routes.dart';
+import 'package:service_connect/theme/app_colors.dart';
 
 class CreateRequestScreen extends StatefulWidget {
   const CreateRequestScreen({super.key});
@@ -11,125 +12,291 @@ class CreateRequestScreen extends StatefulWidget {
 }
 
 class _CreateRequestScreenState extends State<CreateRequestScreen> {
+  final _descriptionController = TextEditingController();
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
   bool _isImmediate = true;
-  final TextEditingController _descController = TextEditingController();
+  final List<String> _photos = [];
+  bool _hasChanges = false;
 
-  Future<void> _showDiscardDialog() async {
-    final shouldDiscard = await showDialog<bool>(
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Discard Request?'),
-        content: const Text('You have unsaved changes. Are you sure you want to discard them?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep Editing'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Discard', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 60)),
     );
-
-    if (shouldDiscard == true && mounted) {
-      context.pop();
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+        _hasChanges = true;
+      });
     }
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedTime = picked;
+        _hasChanges = true;
+      });
+    }
+  }
+
+  Future<void> _pickPhoto() async {
+    // Simulate adding a photo
+    setState(() {
+      _photos.add('photo_${_photos.length + 1}');
+      _hasChanges = true;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return PopScope(
-      canPop: false,
-      onPopInvoked: (didPop) {
+      canPop: !_hasChanges,
+      onPopInvoked: (didPop) async {
         if (didPop) return;
-        if (_descController.text.isNotEmpty) {
-          _showDiscardDialog();
-        } else {
-          context.pop();
+        final result = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Discard Changes?'),
+            content: const Text('You have unsaved changes. Do you want to discard them?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Discard', style: TextStyle(color: AppColors.error)),
+              ),
+            ],
+          ),
+        );
+        if (result == true && context.mounted) {
+          Navigator.of(context).pop();
         }
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Create Request'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              if (_descController.text.isNotEmpty) {
-                _showDiscardDialog();
-              } else {
-                context.pop();
-              }
-            },
-          ),
+          title: const Text('New Request'),
         ),
-        body: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Description', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _descController,
-                      maxLines: 4,
-                      decoration: const InputDecoration(hintText: 'Describe your issue...'),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Description
+              Text('Describe your issue', style: theme.textTheme.titleMedium),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _descriptionController,
+                maxLines: 4,
+                onChanged: (_) => setState(() => _hasChanges = true),
+                decoration: const InputDecoration(
+                  hintText: 'What do you need help with?',
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Photo Upload
+              Text('Add Photos', style: theme.textTheme.titleMedium),
+              const SizedBox(height: 4),
+              Text('(Optional) Helps professionals understand the issue',
+                  style: theme.textTheme.bodySmall),
+              const SizedBox(height: 12),
+              _buildPhotoGrid(theme),
+              const SizedBox(height: 24),
+              // Schedule
+              Text('When do you need it?', style: theme.textTheme.titleMedium),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildScheduleChip(
+                      label: 'Now',
+                      icon: LucideIcons.zap,
+                      isSelected: _isImmediate,
+                      onTap: () => setState(() => _isImmediate = true),
+                      theme: theme,
                     ),
-                    const SizedBox(height: 24),
-                    const Text('Add Photos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      height: 100,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: List.generate(3, (index) => Container(
-                          width: 100,
-                          margin: const EdgeInsets.only(right: 8),
-                          decoration: BoxDecoration(color: AppTheme.lightGreyColor, borderRadius: BorderRadius.circular(12)),
-                          child: const Icon(LucideIcons.camera, color: Colors.grey),
-                        )),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildScheduleChip(
+                      label: 'Schedule',
+                      icon: LucideIcons.calendar,
+                      isSelected: !_isImmediate,
+                      onTap: () => setState(() => _isImmediate = false),
+                      theme: theme,
+                    ),
+                  ),
+                ],
+              ),
+              if (!_isImmediate) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: _pickDate,
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            prefixIcon: Icon(LucideIcons.calendar, size: 20),
+                          ),
+                          child: Text(
+                            _selectedDate != null
+                                ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
+                                : 'Select Date',
+                            style: theme.textTheme.bodyMedium!.copyWith(
+                              color: _selectedDate != null
+                                  ? theme.colorScheme.onSurface
+                                  : AppColors.lightSubtitle,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ChoiceChip(
-                          label: const Text('Immediate'),
-                          selected: _isImmediate,
-                          onSelected: (selected) => setState(() => _isImmediate = selected),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: InkWell(
+                        onTap: _pickTime,
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            prefixIcon: Icon(LucideIcons.clock, size: 20),
+                          ),
+                          child: Text(
+                            _selectedTime != null
+                                ? _selectedTime!.format(context)
+                                : 'Select Time',
+                            style: theme.textTheme.bodyMedium!.copyWith(
+                              color: _selectedTime != null
+                                  ? theme.colorScheme.onSurface
+                                  : AppColors.lightSubtitle,
+                            ),
+                          ),
                         ),
-                        const SizedBox(width: 16),
-                        ChoiceChip(
-                          label: const Text('Schedule'),
-                          selected: !_isImmediate,
-                          onSelected: (selected) => setState(() => _isImmediate = !selected),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -4))]),
-              child: SizedBox(
+              ],
+              const SizedBox(height: 32),
+              // Submit
+              SizedBox(
                 width: double.infinity,
+                height: 56,
                 child: ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request Posted!'), backgroundColor: Colors.green));
-                    context.push('/search');
-                  },
-                  child: const Text('Post Request'),
+                  onPressed: () => context.push(AppRoutes.search),
+                  child: const Text('Find Professionals', style: TextStyle(fontSize: 16)),
                 ),
               ),
-            )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhotoGrid(ThemeData theme) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        ..._photos.map(
+          (photo) => Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: AppColors.accent.withOpacity(0.1),
+            ),
+            child: const Icon(LucideIcons.image, color: AppColors.accent),
+          ),
+        ),
+        GestureDetector(
+          onTap: _pickPhoto,
+          child: Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.accent.withOpacity(0.3),
+                width: 1.5,
+                strokeAlign: BorderSide.strokeAlignInside,
+              ),
+              color: AppColors.accent.withOpacity(0.05),
+            ),
+            child: const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(LucideIcons.camera, size: 22, color: AppColors.accent),
+                SizedBox(height: 4),
+                Text(
+                  'Add',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScheduleChip({
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required ThemeData theme,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.accent.withOpacity(0.1) : theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? AppColors.accent : theme.colorScheme.outline.withOpacity(0.2),
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? AppColors.accent : AppColors.lightSubtitle,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                color: isSelected ? AppColors.accent : AppColors.lightSubtitle,
+              ),
+            ),
           ],
         ),
       ),

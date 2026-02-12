@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:service_connect/screens/auth/customer_signup_screen.dart';
 import 'package:service_connect/screens/auth/professional_signup_screen.dart';
-import 'package:service_connect/screens/auth/sign_in_screen.dart'; // Import this
+import 'package:service_connect/screens/auth/sign_in_screen.dart';
 import 'package:service_connect/screens/customer/booking_history_screen.dart';
 import 'package:service_connect/screens/customer/chat_screen.dart';
 import 'package:service_connect/screens/customer/create_request_screen.dart';
 import 'package:service_connect/screens/customer/customer_home_screen.dart';
 import 'package:service_connect/screens/customer/customer_profile_screen.dart';
 import 'package:service_connect/screens/customer/customer_shell.dart';
+import 'package:service_connect/screens/customer/offer_services_screen.dart';
 import 'package:service_connect/screens/customer/payment_screen.dart';
+import 'package:service_connect/screens/customer/professional_profile_screen.dart';
 import 'package:service_connect/screens/customer/quotes_screen.dart';
 import 'package:service_connect/screens/customer/radar_search_screen.dart';
 import 'package:service_connect/screens/customer/review_screen.dart';
@@ -20,91 +22,102 @@ import 'package:service_connect/screens/pro/pro_dashboard_screen.dart';
 import 'package:service_connect/screens/pro/pro_job_details_screen.dart';
 import 'package:service_connect/screens/pro/pro_profile_screen.dart';
 
+import 'app_routes.dart';
+
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
-  static final GoRouter router = GoRouter(
-    navigatorKey: _rootNavigatorKey,
-    initialLocation: '/',
+  static GoRouter createRouter(String initialLocation) {
+    return GoRouter(
+      navigatorKey: _rootNavigatorKey,
+      initialLocation: initialLocation,
     routes: [
       GoRoute(
-        path: '/',
+        path: AppRoutes.landing,
         builder: (context, state) => const LandingScreen(),
       ),
-      // ADDED: Login Route
       GoRoute(
-        path: '/login',
+        path: AppRoutes.login,
         builder: (context, state) => const SignInScreen(),
       ),
       GoRoute(
-        path: '/signup/customer',
+        path: AppRoutes.customerSignup,
         builder: (context, state) => const CustomerSignupScreen(),
       ),
       GoRoute(
-        path: '/signup/pro',
+        path: AppRoutes.proSignup,
         builder: (context, state) => const ProfessionalSignupScreen(),
       ),
       ShellRoute(
         builder: (context, state, child) => CustomerShell(child: child),
         routes: [
           GoRoute(
-            path: '/home',
+            path: AppRoutes.home,
             builder: (context, state) => const CustomerHomeScreen(),
           ),
           GoRoute(
-            path: '/request',
-            builder: (context, state) => const CreateRequestScreen(),
-          ),
-          GoRoute(
-            path: '/search',
-            builder: (context, state) => const RadarSearchScreen(),
-          ),
-          GoRoute(
-            path: '/quotes',
-            builder: (context, state) => const QuotesScreen(),
-          ),
-          GoRoute(
-            path: '/review',
-            builder: (context, state) => const ReviewScreen(),
-          ),
-          GoRoute(
-            path: '/profile/customer',
+            path: AppRoutes.customerProfile,
             builder: (context, state) => const CustomerProfileScreen(),
           ),
           GoRoute(
-            path: '/history',
+            path: AppRoutes.history,
             builder: (context, state) => const BookingHistoryScreen(),
           ),
         ],
       ),
       GoRoute(
-        path: '/chat/:id',
+        path: AppRoutes.request,
+        builder: (context, state) => const CreateRequestScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.search,
+        builder: (context, state) => const RadarSearchScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.quotes,
+        builder: (context, state) => const QuotesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.review,
+        builder: (context, state) => const ReviewScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.chat,
         builder: (context, state) => ChatScreen(quoteId: state.pathParameters['id']!),
       ),
       GoRoute(
-        path: '/payment',
+        path: AppRoutes.payment,
         builder: (context, state) => const PaymentScreen(),
       ),
       GoRoute(
-        path: '/tracking',
+        path: AppRoutes.tracking,
         builder: (context, state) => const TrackingScreen(),
       ),
       GoRoute(
-        path: '/pro-dashboard',
+        path: AppRoutes.proDashboard,
         builder: (context, state) => const ProDashboardScreen(),
       ),
       GoRoute(
-        path: '/pro/job-details/:id',
+        path: AppRoutes.proJobDetails,
         builder: (context, state) => ProJobDetailsScreen(jobId: state.pathParameters['id']!),
       ),
       GoRoute(
-        path: '/pro/active',
+        path: AppRoutes.proActiveJob,
         builder: (context, state) => const ProActiveJobScreen(),
       ),
       GoRoute(
-        path: '/profile/pro',
+        path: AppRoutes.proProfile,
         builder: (context, state) => const ProProfileScreen(),
       ),
+      GoRoute(
+        path: AppRoutes.offerServices,
+        builder: (context, state) => const OfferServicesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.professionalProfile,
+        builder: (context, state) => ProfessionalProfileScreen(proId: state.pathParameters['proId']!),
+      ),
     ],
-  );
+    );
+  }
 }
