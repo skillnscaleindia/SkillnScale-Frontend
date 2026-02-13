@@ -2,6 +2,7 @@ class UserProfile {
   final String id;
   final String userType;
   final String fullName;
+  final String email;
   final String? phone;
   final String? address;
   final String? profileImageUrl;
@@ -17,6 +18,7 @@ class UserProfile {
     required this.id,
     required this.userType,
     required this.fullName,
+    required this.email,
     this.phone,
     this.address,
     this.profileImageUrl,
@@ -34,6 +36,7 @@ class UserProfile {
       id: json['id'] as String,
       userType: json['user_type'] as String,
       fullName: json['full_name'] as String,
+      email: json['email'] as String,
       phone: json['phone'] as String?,
       address: json['address'] as String?,
       profileImageUrl: json['profile_image_url'] as String?,
@@ -56,6 +59,7 @@ class UserProfile {
       'id': id,
       'user_type': userType,
       'full_name': fullName,
+      'email': email,
       'phone': phone,
       'address': address,
       'profile_image_url': profileImageUrl,

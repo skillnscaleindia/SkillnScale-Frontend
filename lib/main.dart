@@ -13,7 +13,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Services
-  await MockService.initialize();
+  // await MockService.initialize(); // Removed for Backend Integration
   
   // Initialize Auth Persistence
   // We need a temporary container to read the provider and init it

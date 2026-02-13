@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
-import '../../services/mock_service.dart';
-import '../../models/service_request.dart';
-import '../welcome_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:service_connect/services/data_service.dart';
+import 'package:service_connect/services/auth_service.dart';
+import 'package:service_connect/models/service_request.dart';
+import 'package:service_connect/router/app_routes.dart';
+import 'package:go_router/go_router.dart';
 
-class ProfessionalHomeScreen extends StatefulWidget {
+class ProfessionalHomeScreen extends ConsumerStatefulWidget {
   const ProfessionalHomeScreen({super.key});
 
   @override
-  State<ProfessionalHomeScreen> createState() => _ProfessionalHomeScreenState();
+  ConsumerState<ProfessionalHomeScreen> createState() => _ProfessionalHomeScreenState();
 }
 
-class _ProfessionalHomeScreenState extends State<ProfessionalHomeScreen> {
+class _ProfessionalHomeScreenState extends ConsumerState<ProfessionalHomeScreen> {
   int _selectedIndex = 0;
   List<ServiceRequest> _availableRequests = [];
   List<ServiceRequest> _myJobs = [];
@@ -25,22 +28,26 @@ class _ProfessionalHomeScreenState extends State<ProfessionalHomeScreen> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      final pendingRequests = await MockService.getPendingRequests();
-      final user = MockService.currentUser;
-      if (user != null) {
-        final myJobs = await MockService.getProfessionalRequests(user.id);
-        if (mounted) {
-          setState(() {
-            _availableRequests = pendingRequests;
-            _myJobs = myJobs;
-          });
-        }
+      final dataService = ref.read(dataServiceProvider);
+      
+      // Fetch Pending Requests (Available)
+      final pendingRequests = await dataService.getPendingRequests();
+      
+      // Fetch My Jobs (Accepted/In Progress)
+      // Backend /bookings/ returns jobs based on current user role
+      final myJobs = await dataService.getCustomerRequests(""); 
+      
+      if (mounted) {
+        setState(() {
+          _availableRequests = pendingRequests;
+          _myJobs = myJobs;
+        });
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to load data. Please try again.'),
+          SnackBar(
+            content: Text('Failed to load data: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -54,10 +61,10 @@ class _ProfessionalHomeScreenState extends State<ProfessionalHomeScreen> {
 
   Future<void> _acceptRequest(ServiceRequest request) async {
     try {
-      final user = MockService.currentUser;
-      if (user == null) throw Exception('User not authenticated');
-
-      await MockService.acceptServiceRequest(request.id, user.id);
+      // We assume user is authenticated and is a pro
+      // We need pro ID? Backend uses current user token.
+      
+      await ref.read(dataServiceProvider).acceptServiceRequest(request.id, ""); // ID handled by backend
 
       if (!mounted) return;
 
@@ -72,8 +79,8 @@ class _ProfessionalHomeScreenState extends State<ProfessionalHomeScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to accept request. Please try again.'),
+        SnackBar(
+          content: Text('Failed to accept request: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -81,17 +88,9 @@ class _ProfessionalHomeScreenState extends State<ProfessionalHomeScreen> {
   }
 
   Future<void> _signOut() async {
-    await MockService.signOut();
+    await ref.read(authServiceProvider).logout();
     if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      PageRouteBuilder(
-        pageBuilder: (_, __, ___) => const WelcomeScreen(),
-        transitionsBuilder: (_, animation, __, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
-      (route) => false,
-    );
+    context.go(AppRoutes.landing);
   }
 
   @override

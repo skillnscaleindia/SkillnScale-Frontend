@@ -6,6 +6,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:service_connect/providers/user_provider.dart';
 import 'package:service_connect/router/app_routes.dart';
 import 'package:service_connect/theme/app_colors.dart';
+import 'package:service_connect/services/auth_service.dart';
 
 class CustomerSignupScreen extends ConsumerStatefulWidget {
   const CustomerSignupScreen({super.key});
@@ -16,8 +17,22 @@ class CustomerSignupScreen extends ConsumerStatefulWidget {
 
 class _CustomerSignupScreenState extends ConsumerState<CustomerSignupScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _fullNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
   String? _gender;
   DateTime? _dateOfBirth;
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   Future<void> _selectDate() async {
     final picked = await showDatePicker(
@@ -30,6 +45,29 @@ class _CustomerSignupScreenState extends ConsumerState<CustomerSignupScreen> {
       setState(() {
         _dateOfBirth = picked;
       });
+    }
+  }
+
+  Future<void> _signup() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      try {
+        await ref.read(authServiceProvider).signUp(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          fullName: _fullNameController.text.trim(),
+          role: 'customer',
+        );
+        if (mounted) context.go(AppRoutes.home);
+      } catch (e) {
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(content: Text('Signup failed: $e')),
+           );
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -105,6 +143,7 @@ class _CustomerSignupScreenState extends ConsumerState<CustomerSignupScreen> {
                     Text('Full Name', style: theme.textTheme.titleMedium),
                     const SizedBox(height: 8),
                     TextFormField(
+                      controller: _fullNameController,
                       decoration: const InputDecoration(
                         hintText: 'Enter your full name',
                         prefixIcon: Icon(LucideIcons.user, size: 20),
@@ -120,6 +159,7 @@ class _CustomerSignupScreenState extends ConsumerState<CustomerSignupScreen> {
                     Text('Email', style: theme.textTheme.titleMedium),
                     const SizedBox(height: 8),
                     TextFormField(
+                      controller: _emailController,
                       decoration: const InputDecoration(
                         hintText: 'Enter your email',
                         prefixIcon: Icon(LucideIcons.mail, size: 20),
@@ -132,9 +172,25 @@ class _CustomerSignupScreenState extends ConsumerState<CustomerSignupScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
+                    Text('Password', style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        hintText: 'Create a password',
+                        prefixIcon: Icon(LucideIcons.lock, size: 20),
+                      ),
+                      validator: (value) {
+                         if (value == null || value.length < 6) return 'Min 6 characters';
+                         return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
                     Text('Phone Number', style: theme.textTheme.titleMedium),
                     const SizedBox(height: 8),
                     TextFormField(
+                      controller: _phoneController,
                       decoration: const InputDecoration(
                         hintText: 'Enter your phone number',
                         prefixIcon: Icon(LucideIcons.phone, size: 20),
@@ -214,14 +270,10 @@ class _CustomerSignupScreenState extends ConsumerState<CustomerSignupScreen> {
                     SizedBox(
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            ref.read(userRoleProvider.notifier).state =
-                                UserRole.customer;
-                            context.go(AppRoutes.home);
-                          }
-                        },
-                        child: const Text('Create Account', style: TextStyle(fontSize: 16)),
+                        onPressed: _isLoading ? null : _signup,
+                        child: _isLoading 
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text('Create Account', style: TextStyle(fontSize: 16)),
                       ),
                     ),
                     const SizedBox(height: 16),

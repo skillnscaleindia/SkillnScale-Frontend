@@ -8,6 +8,9 @@ import 'package:service_connect/router/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:service_connect/services/location_service.dart';
 import 'package:service_connect/services/auth_service.dart';
+import 'package:service_connect/services/data_service.dart';
+import 'package:service_connect/models/service_category.dart';
+import 'package:service_connect/models/service_request.dart';
 
 class CustomerHomeScreen extends ConsumerStatefulWidget {
   const CustomerHomeScreen({super.key});
@@ -86,6 +89,9 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final categoriesAsync = ref.watch(categoriesProvider);
+    final bookingsAsync = ref.watch(customerBookingsProvider);
+
     return PopScope(
       canPop: false,
       onPopInvoked: (didPop) async {
@@ -227,37 +233,68 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
                 ),
               ),
               // Services Grid
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 0.75,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final service = FakeData.services[index];
-                      return _buildServiceItem(
-                        context,
-                        service: service,
-                        bgColor: AppColors.serviceCategoryColors[index % AppColors.serviceCategoryColors.length],
-                        iconColor: AppColors.serviceCategoryIconColors[index % AppColors.serviceCategoryIconColors.length],
-                      );
-                    },
-                    childCount: FakeData.services.length,
+              categoriesAsync.when(
+                data: (categories) => SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  sliver: SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 0.75,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final service = categories[index];
+                        // Parse color from string 0xFF... or use default
+                        Color bgColor = AppColors.serviceCategoryColors[index % AppColors.serviceCategoryColors.length];
+                        Color iconColor = AppColors.serviceCategoryIconColors[index % AppColors.serviceCategoryIconColors.length];
+                        
+                        if (service.color != null) {
+                           try {
+                             bgColor = Color(int.parse(service.color!));
+                             // Make icon darker or white based on bg? 
+                             // Backend sends "color" which is likely the BG color.
+                           } catch (_) {}
+                        }
+
+                        return _buildServiceItem(
+                          context,
+                          service: service,
+                          bgColor: bgColor,
+                          iconColor: iconColor,
+                        );
+                      },
+                      childCount: categories.length,
+                    ),
                   ),
                 ),
+                loading: () => const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator())),
+                error: (err, stack) => SliverToBoxAdapter(child: Center(child: Text('Error: $err'))),
               ),
+
               // Active Job Card
-              if (FakeData.hasActiveJob)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-                    child: _buildActiveJobCard(context),
-                  ),
-                ),
+              bookingsAsync.when(
+                data: (bookings) {
+                   final activeBooking = bookings.firstWhere(
+                     (b) => b.isAccepted || b.isInProgress, 
+                     orElse: () => ServiceRequest(id: '', customerId: '', categoryId: '', title: '', description: '', location: '', createdAt: DateTime.now(), updatedAt: DateTime.now(), status: 'none'),
+                   );
+                   
+                   if (activeBooking.status != 'none') {
+                     return SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                          child: _buildActiveJobCard(context, activeBooking),
+                        ),
+                      );
+                   }
+                   return const SliverToBoxAdapter(child: SizedBox.shrink());
+                },
+                loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
+                error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+              ),
+              
               // Recent Bookings Section
               SliverToBoxAdapter(
                 child: Padding(
@@ -270,72 +307,72 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
               ),
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: 140,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: 3,
-                    itemBuilder: (context, index) {
-                      final titles = ['AC Service & Repair', 'Home Deep Cleaning', 'Electrician'];
-                      final icons = [LucideIcons.thermometer, LucideIcons.sparkles, LucideIcons.plug];
-                      final ratings = ['4.8', '4.9', '4.7'];
-                      final bookings = ['12K+ bookings', '8K+ bookings', '15K+ bookings'];
-                      return Container(
-                        width: 160,
-                        margin: EdgeInsets.only(right: index < 2 ? 12 : 0),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: theme.colorScheme.outline.withOpacity(0.15),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: AppColors.serviceCategoryColors[index],
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(
-                                icons[index],
-                                size: 20,
-                                color: AppColors.serviceCategoryIconColors[index],
-                              ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              titles[index],
-                              style: theme.textTheme.titleMedium,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFFB800)),
-                                const SizedBox(width: 2),
-                                Text(
-                                  ratings[index],
-                                  style: theme.textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  bookings[index],
-                                  style: theme.textTheme.labelSmall,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                   height: 140,
+                   child: ListView.builder(
+                     scrollDirection: Axis.horizontal,
+                     padding: const EdgeInsets.symmetric(horizontal: 20),
+                     itemCount: 3,
+                     itemBuilder: (context, index) {
+                       final titles = ['AC Service & Repair', 'Home Deep Cleaning', 'Electrician'];
+                       final icons = [LucideIcons.thermometer, LucideIcons.sparkles, LucideIcons.plug];
+                       final ratings = ['4.8', '4.9', '4.7'];
+                       final bookings = ['12K+ bookings', '8K+ bookings', '15K+ bookings'];
+                       return Container(
+                         width: 160,
+                         margin: EdgeInsets.only(right: index < 2 ? 12 : 0),
+                         padding: const EdgeInsets.all(16),
+                         decoration: BoxDecoration(
+                           color: theme.colorScheme.surface,
+                           borderRadius: BorderRadius.circular(16),
+                           border: Border.all(
+                             color: theme.colorScheme.outline.withOpacity(0.15),
+                           ),
+                         ),
+                         child: Column(
+                           crossAxisAlignment: CrossAxisAlignment.start,
+                           children: [
+                             Container(
+                               width: 40,
+                               height: 40,
+                               decoration: BoxDecoration(
+                                 color: AppColors.serviceCategoryColors[index],
+                                 borderRadius: BorderRadius.circular(10),
+                               ),
+                               child: Icon(
+                                 icons[index],
+                                 size: 20,
+                                 color: AppColors.serviceCategoryIconColors[index],
+                               ),
+                             ),
+                             const Spacer(),
+                             Text(
+                               titles[index],
+                               style: theme.textTheme.titleMedium,
+                               maxLines: 2,
+                               overflow: TextOverflow.ellipsis,
+                             ),
+                             const SizedBox(height: 4),
+                             Row(
+                               children: [
+                                 const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFFB800)),
+                                 const SizedBox(width: 2),
+                                 Text(
+                                   ratings[index],
+                                   style: theme.textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600),
+                                 ),
+                                 const SizedBox(width: 6),
+                                 Text(
+                                   bookings[index],
+                                   style: theme.textTheme.labelSmall,
+                                 ),
+                               ],
+                             ),
+                           ],
+                         ),
+                       );
+                     },
+                   ),
+                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 20)),
             ],
@@ -419,12 +456,12 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
 
   Widget _buildServiceItem(
     BuildContext context, {
-    required Service service,
+    required ServiceCategory service,
     required Color bgColor,
     required Color iconColor,
   }) {
     return GestureDetector(
-      onTap: () => context.push(AppRoutes.request),
+      onTap: () => context.push(AppRoutes.request, extra: service),
       child: Column(
         children: [
           Container(
@@ -434,7 +471,8 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
               color: bgColor,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(service.icon, size: 24, color: iconColor),
+            // Use local icon mapping or dynamic if backend provides valid icon name
+            child: Icon(_getIcon(service.icon), size: 24, color: iconColor),
           ),
           const SizedBox(height: 8),
           Text(
@@ -451,8 +489,19 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
       ),
     );
   }
+  
+  IconData _getIcon(String? iconName) {
+     switch(iconName) {
+       case 'sparkles': return LucideIcons.sparkles;
+       case 'wrench': return LucideIcons.wrench;
+       case 'zap': return LucideIcons.zap;
+       case 'paint-roller': return LucideIcons.paintRoller;
+       // Add more
+       default: return LucideIcons.info;
+     }
+  }
 
-  Widget _buildActiveJobCard(BuildContext context) {
+  Widget _buildActiveJobCard(BuildContext context, ServiceRequest booking) {
     final theme = Theme.of(context);
     return GestureDetector(
       onTap: () => context.push(AppRoutes.tracking),
@@ -485,9 +534,9 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Pro Arriving in 5 mins',
-                    style: TextStyle(
+                   Text(
+                    booking.isInProgress ? 'Pro Working' : 'Pro Assigned',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -495,7 +544,7 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Rajesh Kumar · Plumbing',
+                    booking.title,
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.75),
                       fontSize: 12,

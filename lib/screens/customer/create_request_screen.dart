@@ -1,23 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:service_connect/router/app_routes.dart';
 import 'package:service_connect/theme/app_colors.dart';
+import 'package:service_connect/models/service_category.dart';
+import 'package:service_connect/services/data_service.dart';
+import 'package:service_connect/services/auth_service.dart';
 
-class CreateRequestScreen extends StatefulWidget {
-  const CreateRequestScreen({super.key});
+class CreateRequestScreen extends ConsumerStatefulWidget {
+  final ServiceCategory? category;
+  
+  const CreateRequestScreen({super.key, this.category});
 
   @override
-  State<CreateRequestScreen> createState() => _CreateRequestScreenState();
+  ConsumerState<CreateRequestScreen> createState() => _CreateRequestScreenState();
 }
 
-class _CreateRequestScreenState extends State<CreateRequestScreen> {
+class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
   final _descriptionController = TextEditingController();
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   bool _isImmediate = true;
   final List<String> _photos = [];
   bool _hasChanges = false;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -60,6 +67,63 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
       _hasChanges = true;
     });
   }
+  
+  Future<void> _submitRequest() async {
+    if (_descriptionController.text.isEmpty) {
+       ScaffoldMessenger.of(context).showSnackBar(
+         const SnackBar(content: Text('Please describe your issue')),
+       );
+       return;
+    }
+
+    setState(() => _isSubmitting = true);
+    
+    try {
+      final authService = ref.read(authServiceProvider);
+      // Use saved home address or default
+      final address = authService.getAddress('home') ?? "123 Main St (Default)"; 
+
+      final scheduledDate = _isImmediate 
+          ? DateTime.now() 
+          : DateTime(
+              _selectedDate?.year ?? DateTime.now().year,
+              _selectedDate?.month ?? DateTime.now().month,
+              _selectedDate?.day ?? DateTime.now().day,
+              _selectedTime?.hour ?? 9,
+              _selectedTime?.minute ?? 0,
+            );
+
+      await ref.read(dataServiceProvider).createServiceRequest(
+        categoryId: widget.category?.id ?? "general",
+        title: widget.category?.name ?? "General Request",
+        description: _descriptionController.text,
+        location: address,
+        scheduledDate: scheduledDate,
+      );
+      
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Request created successfully!')),
+      );
+      
+      // Navigate to tracking or home (invalidate providers to refresh)
+      ref.refresh(customerBookingsProvider);
+      
+      // Go to home first, then tracking? Or just tracking.
+      // But tracking needs active job.
+      
+      context.go(AppRoutes.home);
+      
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+         SnackBar(content: Text('Failed to create request: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +155,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('New Request'),
+          title: Text(widget.category?.name ?? 'New Request'),
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
@@ -198,8 +262,10 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () => context.push(AppRoutes.search),
-                  child: const Text('Find Professionals', style: TextStyle(fontSize: 16)),
+                  onPressed: _isSubmitting ? null : _submitRequest,
+                  child: _isSubmitting 
+                     ? const CircularProgressIndicator(color: Colors.white)
+                     : const Text('Find Professionals', style: TextStyle(fontSize: 16)),
                 ),
               ),
             ],

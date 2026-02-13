@@ -3,14 +3,16 @@ class ServiceCategory {
   final String name;
   final String? description;
   final String? icon;
-  final DateTime createdAt;
+  final String? color; // Added
+  final DateTime? createdAt; // Made optional
 
   ServiceCategory({
     required this.id,
     required this.name,
     this.description,
     this.icon,
-    required this.createdAt,
+    this.color,
+    this.createdAt,
   });
 
   factory ServiceCategory.fromJson(Map<String, dynamic> json) {
@@ -19,7 +21,8 @@ class ServiceCategory {
       name: json['name'] as String,
       description: json['description'] as String?,
       icon: json['icon'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      color: json['color'] as String?,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
     );
   }
 
@@ -29,6 +32,8 @@ class ServiceCategory {
       'name': name,
       'description': description,
       'icon': icon,
+      'color': color,
+      'created_at': createdAt?.toIso8601String(),
     };
   }
 }

@@ -18,6 +18,12 @@
 @import flutter_native_splash;
 #endif
 
+#if __has_include(<flutter_secure_storage/FlutterSecureStoragePlugin.h>)
+#import <flutter_secure_storage/FlutterSecureStoragePlugin.h>
+#else
+@import flutter_secure_storage;
+#endif
+
 #if __has_include(<geocoding_ios/GeocodingPlugin.h>)
 #import <geocoding_ios/GeocodingPlugin.h>
 #else
@@ -53,6 +59,7 @@
 + (void)registerWithRegistry:(NSObject<FlutterPluginRegistry>*)registry {
   [AppLinksIosPlugin registerWithRegistrar:[registry registrarForPlugin:@"AppLinksIosPlugin"]];
   [FlutterNativeSplashPlugin registerWithRegistrar:[registry registrarForPlugin:@"FlutterNativeSplashPlugin"]];
+  [FlutterSecureStoragePlugin registerWithRegistrar:[registry registrarForPlugin:@"FlutterSecureStoragePlugin"]];
   [GeocodingPlugin registerWithRegistrar:[registry registrarForPlugin:@"GeocodingPlugin"]];
   [GeolocatorPlugin registerWithRegistrar:[registry registrarForPlugin:@"GeolocatorPlugin"]];
   [FPPPackageInfoPlusPlugin registerWithRegistrar:[registry registrarForPlugin:@"FPPPackageInfoPlusPlugin"]];

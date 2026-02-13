@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'welcome_screen.dart';
-import '../services/mock_service.dart';
+import '../services/auth_service.dart';
 import 'customer/customer_home_screen.dart';
 import 'professional/professional_home_screen.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
@@ -19,32 +20,34 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkAuthStatus() async {
+    // Wait for services to be ready/animations
     await Future.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;
 
-    final user = MockService.currentUser;
+    final authService = ref.read(authServiceProvider);
+    
+    // We already initialized authService in main.dart via container, 
+    // but accessing it here via ref ensures we use the provider.
+    // The state inside authService (SharedPreferences) should be ready.
 
-    if (user != null) {
-      final profile = await MockService.getCurrentProfile();
+    if (authService.isLoggedIn) {
+      if (!mounted) return;
+      
+      final role = authService.userRole;
+      Widget homeScreen = role == 'professional'
+          ? const ProfessionalHomeScreen()
+          : const CustomerHomeScreen();
 
-      if (profile != null) {
-        if (!mounted) return;
-
-        Widget homeScreen = profile.isCustomer
-            ? const CustomerHomeScreen()
-            : const ProfessionalHomeScreen();
-
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (_, __, ___) => homeScreen,
-            transitionsBuilder: (_, animation, __, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-          ),
-        );
-        return;
-      }
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => homeScreen,
+          transitionsBuilder: (_, animation, __, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      );
+      return;
     }
 
     if (!mounted) return;
