@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -35,17 +36,37 @@ class _CustomerSignupScreenState extends ConsumerState<CustomerSignupScreen> {
   }
 
   Future<void> _selectDate() async {
-    final picked = await showDatePicker(
+    DateTime tempDate = _dateOfBirth ?? DateTime.now();
+    await showCupertinoModalPopup(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(1920),
-      lastDate: DateTime.now(),
+      builder: (context) => Container(
+        height: 280,
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: Column(
+          children: [
+            SizedBox(
+              height: 200,
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.date,
+                initialDateTime: tempDate,
+                minimumDate: DateTime(1920),
+                maximumDate: DateTime.now(),
+                onDateTimeChanged: (val) {
+                  tempDate = val;
+                },
+              ),
+            ),
+            CupertinoButton(
+              child: const Text('Confirm'),
+              onPressed: () {
+                setState(() => _dateOfBirth = tempDate);
+                Navigator.of(context).pop();
+              },
+            )
+          ],
+        ),
+      ),
     );
-    if (picked != null && picked != _dateOfBirth) {
-      setState(() {
-        _dateOfBirth = picked;
-      });
-    }
   }
 
   Future<void> _signup() async {

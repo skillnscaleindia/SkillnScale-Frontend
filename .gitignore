@@ -6,3 +6,4 @@ build/
 # Android build files
 android/.gradle/
 android/local.properties
+uploads/

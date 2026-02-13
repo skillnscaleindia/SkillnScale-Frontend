@@ -7,6 +7,8 @@ import 'package:service_connect/theme/app_colors.dart';
 import 'package:service_connect/models/service_category.dart';
 import 'package:service_connect/services/data_service.dart';
 import 'package:service_connect/services/auth_service.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:service_connect/services/upload_service.dart';
 
 class CreateRequestScreen extends ConsumerStatefulWidget {
   final ServiceCategory? category;
@@ -61,11 +63,27 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
   }
 
   Future<void> _pickPhoto() async {
-    // Simulate adding a photo
-    setState(() {
-      _photos.add('photo_${_photos.length + 1}');
-      _hasChanges = true;
-    });
+    final picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    
+    if (image != null) {
+      setState(() => _isSubmitting = true); // Show loading
+      try {
+        final url = await ref.read(uploadServiceProvider).uploadFile(image);
+        setState(() {
+          _photos.add(url);
+          _hasChanges = true;
+          _isSubmitting = false;
+        });
+      } catch (e) {
+        setState(() => _isSubmitting = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Upload failed: $e')),
+          );
+        }
+      }
+    }
   }
   
   Future<void> _submitRequest() async {
@@ -80,7 +98,6 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
     
     try {
       final authService = ref.read(authServiceProvider);
-      // Use saved home address or default
       final address = authService.getAddress('home') ?? "123 Main St (Default)"; 
 
       final scheduledDate = _isImmediate 
@@ -93,7 +110,7 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
               _selectedTime?.minute ?? 0,
             );
 
-      await ref.read(dataServiceProvider).createServiceRequest(
+      final result = await ref.read(dataServiceProvider).createServiceRequest(
         categoryId: widget.category?.id ?? "general",
         title: widget.category?.name ?? "General Request",
         description: _descriptionController.text,
@@ -103,17 +120,19 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
       
       if (!mounted) return;
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Request created successfully!')),
-      );
+      final requestId = result['id'] as String?;
       
-      // Navigate to tracking or home (invalidate providers to refresh)
       ref.refresh(customerBookingsProvider);
       
-      // Go to home first, then tracking? Or just tracking.
-      // But tracking needs active job.
-      
-      context.go(AppRoutes.home);
+      // Navigate to AI-matched professionals
+      if (requestId != null) {
+        context.push(AppRoutes.matchedPros, extra: {
+          'requestId': requestId,
+          'categoryName': widget.category?.name ?? 'Service',
+        });
+      } else {
+        context.go(AppRoutes.home);
+      }
       
     } catch (e) {
       if (!mounted) return;
@@ -281,14 +300,17 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
       runSpacing: 10,
       children: [
         ..._photos.map(
-          (photo) => Container(
+          (url) => Container(
             width: 80,
             height: 80,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               color: AppColors.accent.withOpacity(0.1),
+              image: DecorationImage(
+                image: NetworkImage('http://localhost:8000$url'),
+                fit: BoxFit.cover,
+              ),
             ),
-            child: const Icon(LucideIcons.image, color: AppColors.accent),
           ),
         ),
         GestureDetector(

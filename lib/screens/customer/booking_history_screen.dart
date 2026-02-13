@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
+import 'package:service_connect/router/app_routes.dart';
 import 'package:service_connect/theme/app_colors.dart';
 
 class BookingHistoryScreen extends StatelessWidget {
@@ -193,6 +195,25 @@ class BookingHistoryScreen extends StatelessWidget {
               ],
             ),
           ),
+
+          if (type == 'active')
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => context.push(
+                    AppRoutes.tracking.replaceFirst(':id', booking['id']!),
+                  ),
+                  icon: const Icon(LucideIcons.mapPin, size: 16),
+                  label: const Text('Track Location'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: BorderSide(color: AppColors.primary.withOpacity(0.5)),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -210,16 +231,16 @@ class BookingHistoryScreen extends StatelessWidget {
   List<Map<String, String>> _getMockBookings(String type) {
     if (type == 'active') {
       return [
-        {'service': 'Plumbing Repair', 'professional': 'Rajesh Kumar', 'date': '12 Feb 2026', 'price': '\$50'},
+        {'id': 'booking_123', 'service': 'Plumbing Repair', 'professional': 'Rajesh Kumar', 'date': '12 Feb 2026', 'price': '\$50'},
       ];
     } else if (type == 'completed') {
       return [
-        {'service': 'AC Service', 'professional': 'Suresh Singh', 'date': '8 Feb 2026', 'price': '\$75'},
-        {'service': 'Electrical Wiring', 'professional': 'Amit Patel', 'date': '2 Feb 2026', 'price': '\$120'},
+        {'id': 'booking_456', 'service': 'AC Service', 'professional': 'Suresh Singh', 'date': '8 Feb 2026', 'price': '\$75'},
+        {'id': 'booking_789', 'service': 'Electrical Wiring', 'professional': 'Amit Patel', 'date': '2 Feb 2026', 'price': '\$120'},
       ];
     } else {
       return [
-        {'service': 'House Cleaning', 'professional': 'Anjali Sharma', 'date': '29 Jan 2026', 'price': '\$40'},
+        {'id': 'booking_000', 'service': 'House Cleaning', 'professional': 'Anjali Sharma', 'date': '29 Jan 2026', 'price': '\$40'},
       ];
     }
   }

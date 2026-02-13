@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
 import 'api_client.dart';
 import '../models/service_category.dart';
 import '../models/service_request.dart';
@@ -21,6 +20,7 @@ class DataService {
 
   DataService(this._ref);
 
+  // ─── Categories ──────────────────────────────────────
   Future<List<ServiceCategory>> getServiceCategories() async {
     try {
       final apiClient = _ref.read(apiClientProvider);
@@ -32,33 +32,54 @@ class DataService {
     }
   }
 
-  Future<ServiceRequest> createServiceRequest({
+  // ─── Service Requests (NEW API) ──────────────────────
+  Future<Map<String, dynamic>> createServiceRequest({
     required String categoryId,
     required String title,
     required String description,
     required String location,
     required DateTime scheduledDate,
+    String urgency = 'normal',
   }) async {
     try {
       final apiClient = _ref.read(apiClientProvider);
-      // Map Frontend ServiceRequest params to Backend BookingCreate
-      // Note: Backend expects "service_id" which usually is specific item, 
-      // but here we use categoryId as a placeholder or title.
-      // We'll pass title/description in notes or map appropriately.
-      
-      final response = await apiClient.client.post('/bookings/', data: {
-        "service_id": categoryId, // Using category as service_id for now
-        "scheduled_at": scheduledDate.toIso8601String(),
-        "address": location,
-        "notes": "$title: $description", // Combine title/desc into notes
+      final response = await apiClient.client.post('/requests/', data: {
+        'category_id': categoryId,
+        'title': title,
+        'description': description,
+        'location': location,
+        'scheduled_at': scheduledDate.toIso8601String(),
+        'urgency': urgency,
       });
-
-      return _mapBookingToServiceRequest(response.data);
+      return Map<String, dynamic>.from(response.data);
     } catch (e) {
-      throw Exception('Failed to create booking: $e');
+      throw Exception('Failed to create request: $e');
     }
   }
 
+  /// Get matched professionals with AI scores
+  Future<List<Map<String, dynamic>>> getMatchedProfessionals(String requestId) async {
+    try {
+      final apiClient = _ref.read(apiClientProvider);
+      final response = await apiClient.client.get('/requests/$requestId/matches');
+      return List<Map<String, dynamic>>.from(response.data);
+    } catch (e) {
+      throw Exception('Failed to get matches: $e');
+    }
+  }
+
+  /// Get current user's requests
+  Future<List<Map<String, dynamic>>> getMyRequests() async {
+    try {
+      final apiClient = _ref.read(apiClientProvider);
+      final response = await apiClient.client.get('/requests/');
+      return List<Map<String, dynamic>>.from(response.data);
+    } catch (e) {
+      throw Exception('Failed to load requests: $e');
+    }
+  }
+
+  // ─── Bookings (Legacy compat) ────────────────────────
   Future<List<ServiceRequest>> getCustomerRequests(String customerId) async {
     try {
       final apiClient = _ref.read(apiClientProvider);
@@ -90,11 +111,113 @@ class DataService {
     }
   }
 
-  // Mapper
+  /// Update booking status (in_progress / completed)
+  Future<void> updateBookingStatus(String bookingId, String status) async {
+    try {
+      final apiClient = _ref.read(apiClientProvider);
+      await apiClient.client.patch('/bookings/$bookingId/status', data: {
+        'status': status,
+      });
+    } catch (e) {
+      throw Exception('Failed to update status: $e');
+    }
+  }
+
+  // ─── Reviews ─────────────────────────────────────────
+  Future<void> submitReview({
+    required String bookingId,
+    required int rating,
+    required String comment,
+  }) async {
+    try {
+      final apiClient = _ref.read(apiClientProvider);
+      await apiClient.client.post('/reviews/', data: {
+        'booking_id': bookingId,
+        'rating': rating,
+        'comment': comment,
+      });
+    } catch (e) {
+      throw Exception('Failed to submit review: $e');
+    }
+  }
+
+  // ─── Availability ────────────────────────────────────
+  Future<List<Map<String, dynamic>>> getAvailability() async {
+    try {
+      final apiClient = _ref.read(apiClientProvider);
+      final response = await apiClient.client.get('/availability/');
+      return List<Map<String, dynamic>>.from(response.data);
+    } catch (e) {
+      throw Exception('Failed to load availability: $e');
+    }
+  }
+
+  Future<void> setAvailability({
+    required String dayOfWeek,
+    required String startTime,
+    required String endTime,
+  }) async {
+    try {
+      final apiClient = _ref.read(apiClientProvider);
+      await apiClient.client.post('/availability/', data: {
+        'day_of_week': dayOfWeek,
+        'start_time': startTime,
+        'end_time': endTime,
+      });
+    } catch (e) {
+      throw Exception('Failed to set availability: $e');
+    }
+  }
+
+
+
+  // ─── Dashboards (NEW API) ────────────────────────────
+  Future<Map<String, dynamic>> getCustomerDashboard() async {
+    try {
+      final apiClient = _ref.read(apiClientProvider);
+      final response = await apiClient.client.get('/customer/dashboard');
+      return Map<String, dynamic>.from(response.data);
+    } catch (e) {
+      throw Exception('Failed to load dashboard: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> getProDashboard() async {
+    try {
+      final apiClient = _ref.read(apiClientProvider);
+      final response = await apiClient.client.get('/pro/dashboard');
+      return Map<String, dynamic>.from(response.data);
+    } catch (e) {
+      throw Exception('Failed to load dashboard: $e');
+    }
+  }
+
+  Future<void> updateProLocation(double lat, double lng) async {
+    try {
+      final apiClient = _ref.read(apiClientProvider);
+      await apiClient.client.put('/pro/location', data: {
+        'latitude': lat,
+        'longitude': lng,
+      });
+    } catch (e) {
+      print('Failed to update location: $e'); // Silent fail is ok for background updates
+    }
+  }
+
+  /// Get professional location for a booking
+  Future<Map<String, dynamic>> getBookingLocation(String bookingId) async {
+    try {
+      final apiClient = _ref.read(apiClientProvider);
+      final response = await apiClient.client.get('/bookings/$bookingId/location');
+      return Map<String, dynamic>.from(response.data);
+    } catch (e) {
+      print('Failed to get location: $e');
+      return {'latitude': null, 'longitude': null};
+    }
+  }
+
+  // ─── Helper ──────────────────────────────────────────
   ServiceRequest _mapBookingToServiceRequest(Map<String, dynamic> json) {
-    // Backend: id, user_id, service_id, scheduled_at, address, notes, status, total_amount, created_at
-    // Frontend: id, customerId, categoryId, title, description, location, status, scheduledDate, price, createdAt
-    
     final notes = json['notes'] as String? ?? "";
     final parts = notes.split(": ");
     final title = parts.isNotEmpty ? parts[0] : "Service Request";
@@ -104,7 +227,7 @@ class DataService {
       id: json['id'] as String,
       customerId: json['user_id'].toString(),
       professionalId: json['pro_id']?.toString(),
-      categoryId: json['service_id'] as String, // Using service_id as category
+      categoryId: json['service_id'] as String,
       title: title,
       description: description,
       location: json['address'] as String,
@@ -112,7 +235,7 @@ class DataService {
       scheduledDate: DateTime.parse(json['scheduled_at'] as String),
       price: (json['total_amount'] as num).toDouble(),
       createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['created_at'] as String), // Mock updated_at
+      updatedAt: DateTime.parse(json['created_at'] as String),
     );
   }
 }

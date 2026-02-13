@@ -5,6 +5,7 @@ import 'package:service_connect/screens/auth/professional_signup_screen.dart';
 import 'package:service_connect/screens/auth/sign_in_screen.dart';
 import 'package:service_connect/screens/customer/booking_history_screen.dart';
 import 'package:service_connect/screens/customer/chat_screen.dart';
+import 'package:service_connect/screens/customer/matched_professionals_screen.dart';
 import 'package:service_connect/screens/customer/create_request_screen.dart';
 import 'package:service_connect/screens/customer/customer_home_screen.dart';
 import 'package:service_connect/screens/customer/customer_profile_screen.dart';
@@ -15,7 +16,7 @@ import 'package:service_connect/screens/customer/professional_profile_screen.dar
 import 'package:service_connect/screens/customer/quotes_screen.dart';
 import 'package:service_connect/screens/customer/radar_search_screen.dart';
 import 'package:service_connect/screens/customer/review_screen.dart';
-import 'package:service_connect/screens/customer/tracking_screen.dart';
+import 'package:service_connect/screens/customer/track_professional_screen.dart';
 import 'package:service_connect/screens/landing_screen.dart';
 import 'package:service_connect/screens/pro/pro_active_job_screen.dart';
 import 'package:service_connect/screens/pro/pro_dashboard_screen.dart';
@@ -87,15 +88,28 @@ class AppRouter {
         ),
         GoRoute(
           path: AppRoutes.chat,
-          builder: (context, state) => ChatScreen(quoteId: state.pathParameters['id']!),
+          builder: (context, state) => ChatScreen(roomId: state.pathParameters['id']!),
         ),
         GoRoute(
           path: AppRoutes.payment,
-          builder: (context, state) => const PaymentScreen(),
+          builder: (context, state) {
+            final bookingData = state.extra as Map<String, dynamic>?;
+            return PaymentScreen(bookingData: bookingData);
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.matchedPros,
+          builder: (context, state) {
+            final data = state.extra as Map<String, String>? ?? {};
+            return MatchedProfessionalsScreen(
+              requestId: data['requestId'] ?? '',
+              categoryName: data['categoryName'] ?? 'Service',
+            );
+          },
         ),
         GoRoute(
           path: AppRoutes.tracking,
-          builder: (context, state) => const TrackingScreen(),
+          builder: (context, state) => TrackProfessionalScreen(bookingId: state.pathParameters['id']!),
         ),
         GoRoute(
           path: AppRoutes.proDashboard,

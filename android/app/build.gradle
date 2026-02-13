@@ -45,11 +45,24 @@ android {
         targetSdk 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+        multiDexEnabled true
+    }
+
+    signingConfigs {
+        release {
+            keyAlias 'key'
+            keyPassword 'password'
+            storeFile file('release-keystore.jks')
+            storePassword 'password'
+        }
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }
@@ -58,4 +71,6 @@ flutter {
     source '../..'
 }
 
-dependencies {}
+dependencies {
+    implementation 'androidx.multidex:multidex:2.0.1'
+}

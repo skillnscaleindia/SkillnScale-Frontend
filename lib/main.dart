@@ -1,22 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:service_connect/router/app_router.dart';
 import 'package:service_connect/router/app_routes.dart';
 import 'package:service_connect/theme/app_theme.dart';
-import 'package:service_connect/services/mock_service.dart';
 import 'package:service_connect/services/auth_service.dart';
-import 'package:service_connect/services/location_service.dart';
+import 'package:service_connect/l10n/app_localizations.dart';
+
+import 'package:flutter_stripe/flutter_stripe.dart';
+
+// Locale provider for language switching
+final localeProvider = StateProvider<Locale>((ref) => const Locale('en'));
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Services
-  // await MockService.initialize(); // Removed for Backend Integration
-  
+  // Initialize Stripe
+  Stripe.publishableKey = 'pk_test_mock_publishable_key';
+  await Stripe.instance.applySettings();
+
   // Initialize Auth Persistence
-  // We need a temporary container to read the provider and init it
   final container = ProviderContainer();
   final authService = container.read(authServiceProvider);
   await authService.init();
@@ -54,20 +59,30 @@ void main() async {
   );
 }
 
-class ServiceConnectApp extends StatelessWidget {
+class ServiceConnectApp extends ConsumerWidget {
   final GoRouter router;
 
   const ServiceConnectApp({super.key, required this.router});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
+
     return MaterialApp.router(
-      title: 'ServiceConnect',
+      title: 'SkillnScale',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.light,
       routerConfig: router,
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
     );
   }
 }

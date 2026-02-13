@@ -24,11 +24,17 @@ class AuthService {
   // Keys
   static const String _isLoggedInKey = 'isLoggedIn';
   static const String _userRoleKey = 'userRole';
+  static const String _userNameKey = 'userName';
+  static const String _userEmailKey = 'userEmail';
+  static const String _userIdKey = 'userId';
   static const String _homeAddressKey = 'homeAddress';
   static const String _workAddressKey = 'workAddress';
 
   bool get isLoggedIn => _prefs?.getBool(_isLoggedInKey) ?? false;
   String get userRole => _prefs?.getString(_userRoleKey) ?? 'customer';
+  String? get userName => _prefs?.getString(_userNameKey);
+  String? get userEmail => _prefs?.getString(_userEmailKey);
+  String? get userId => _prefs?.getString(_userIdKey);
 
   Future<void> login(String role) async {
     await _prefs?.setBool(_isLoggedInKey, true);
@@ -50,7 +56,8 @@ class AuthService {
       });
 
       final token = response.data['access_token'];
-      await apiClient.saveToken(token);
+      final refreshToken = response.data['refresh_token'];
+      await apiClient.saveToken(token, refreshToken);
 
       // 2. Fetch User Profile
       final meResponse = await apiClient.client.get('/users/me');
@@ -72,8 +79,11 @@ class AuthService {
         updatedAt: DateTime.now(), // Mock if missing
       );
 
-      // 3. Persist Login
+      // 3. Persist Login & user info
       await login(frontendRole);
+      await _prefs?.setString(_userNameKey, userData['full_name'] ?? 'User');
+      await _prefs?.setString(_userEmailKey, userData['email'] ?? '');
+      await _prefs?.setString(_userIdKey, userData['id'].toString());
 
       return frontendRole == 'professional' ? UserRole.pro : UserRole.customer;
     } on DioException catch (e) {

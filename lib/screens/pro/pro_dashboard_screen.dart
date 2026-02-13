@@ -1,21 +1,64 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:service_connect/data/fake_data.dart';
 import 'package:service_connect/router/app_routes.dart';
+import 'package:service_connect/services/data_service.dart';
 import 'package:service_connect/theme/app_colors.dart';
 
-class ProDashboardScreen extends StatefulWidget {
+class ProDashboardScreen extends ConsumerStatefulWidget {
   const ProDashboardScreen({super.key});
 
   @override
-  State<ProDashboardScreen> createState() => _ProDashboardScreenState();
+  ConsumerState<ProDashboardScreen> createState() => _ProDashboardScreenState();
 }
 
-class _ProDashboardScreenState extends State<ProDashboardScreen> {
+class _ProDashboardScreenState extends ConsumerState<ProDashboardScreen> {
   bool isOnline = true;
   DateTime? _lastPressedAt;
+  Timer? _locationTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    if (isOnline) _startLocationUpdates();
+  }
+
+  @override
+  void dispose() {
+    _locationTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startLocationUpdates() {
+    _locationTimer?.cancel();
+    _locationTimer = Timer.periodic(const Duration(seconds: 30), (_) => _updateLocation());
+    _updateLocation(); 
+  }
+
+  void _stopLocationUpdates() {
+    _locationTimer?.cancel();
+  }
+
+  Future<void> _updateLocation() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) return;
+      }
+      if (permission == LocationPermission.deniedForever) return;
+      
+      final position = await Geolocator.getCurrentPosition();
+      await ref.read(dataServiceProvider).updateProLocation(position.latitude, position.longitude);
+    } catch (e) {
+      debugPrint('Location update failed: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +160,10 @@ class _ProDashboardScreenState extends State<ProDashboardScreen> {
                         ),
                         Switch.adaptive(
                           value: isOnline,
-                          onChanged: (v) => setState(() => isOnline = v),
+                          onChanged: (v) {
+                            setState(() => isOnline = v);
+                            if (v) _startLocationUpdates(); else _stopLocationUpdates();
+                          },
                           activeColor: AppColors.success,
                         ),
                       ],

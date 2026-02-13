@@ -1,24 +1,110 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:service_connect/router/app_routes.dart';
 import 'package:service_connect/theme/app_colors.dart';
+import 'package:service_connect/services/data_service.dart';
+import 'package:service_connect/services/payment_service.dart';
+import 'package:service_connect/l10n/app_localizations.dart';
 
-class PaymentScreen extends StatefulWidget {
-  const PaymentScreen({super.key});
+class PaymentScreen extends ConsumerStatefulWidget {
+  final Map<String, dynamic>? bookingData;
+  const PaymentScreen({this.bookingData, super.key});
 
   @override
-  State<PaymentScreen> createState() => _PaymentScreenState();
+  ConsumerState<PaymentScreen> createState() => _PaymentScreenState();
 }
 
-class _PaymentScreenState extends State<PaymentScreen> {
-  String _selectedMethod = 'card';
+class _PaymentScreenState extends ConsumerState<PaymentScreen> {
+  String _selectedMethod = 'upi';
+  final _upiController = TextEditingController();
+  bool _processing = false;
+
+  double get _amount {
+    final price = widget.bookingData?['agreed_price'] ??
+        widget.bookingData?['total_amount'] ??
+        0;
+    return (price as num).toDouble();
+  }
+
+  String get _serviceName {
+    return widget.bookingData?['notes'] as String? ?? 'Service Booking';
+  }
+
+  String get _bookingId {
+    return widget.bookingData?['id'] as String? ?? '';
+  }
+
+  Future<void> _processPayment() async {
+    setState(() => _processing = true);
+
+    try {
+      if (_selectedMethod == 'card') {
+        await _handleStripePayment();
+      } else {
+        // Simulate other payment methods
+        await Future.delayed(const Duration(seconds: 2));
+        _onPaymentSuccess();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Payment Failed: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _processing = false);
+      }
+    }
+  }
+
+  Future<void> _handleStripePayment() async {
+    final paymentService = ref.read(paymentServiceProvider);
+    
+    // 1. Initialize Sheet
+    await paymentService.initPaymentSheet(bookingId: _bookingId);
+    
+    // 2. Present Sheet
+    await paymentService.presentPaymentSheet();
+    
+    _onPaymentSuccess();
+  }
+
+  void _onPaymentSuccess() {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.check_circle, color: Colors.white, size: 18),
+              SizedBox(width: 8),
+              Text('Payment successful!'),
+            ],
+          ),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      
+      final route = AppRoutes.tracking.replaceFirst(':id', _bookingId);
+      context.push(route);
+    }
+  }
+
+  @override
+  void dispose() {
+    _upiController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Payment')),
+      appBar: AppBar(title: Text(l10n.payment)),
       body: Column(
         children: [
           Expanded(
@@ -45,16 +131,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     child: Column(
                       children: [
                         Text(
-                          'Total Amount',
+                          l10n.totalAmount,
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.7),
                             fontSize: 14,
                           ),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          '\$45.00',
-                          style: TextStyle(
+                        Text(
+                          '₹${_amount.toStringAsFixed(0)}',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 42,
                             fontWeight: FontWeight.w800,
@@ -63,42 +149,102 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Plumbing Repair · Rajesh Kumar',
+                          _serviceName,
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.6),
                             fontSize: 12,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 28),
                   // Payment Methods
-                  Text('Payment Method', style: theme.textTheme.headlineSmall),
+                  Text(l10n.paymentMethod,
+                      style: theme.textTheme.headlineSmall),
                   const SizedBox(height: 12),
                   _buildPaymentOption(
                     theme: theme,
+                    icon: LucideIcons.smartphone,
+                    title: l10n.upi,
+                    subtitle: 'Google Pay, PhonePe, Paytm',
+                    value: 'upi',
+                  ),
+                  const SizedBox(height: 10),
+
+                  // UPI ID Input (show when UPI selected)
+                  if (_selectedMethod == 'upi')
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent.withOpacity(0.04),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: AppColors.accent.withOpacity(0.15),
+                        ),
+                      ),
+                      child: TextField(
+                        controller: _upiController,
+                        decoration: InputDecoration(
+                          hintText: l10n.enterUpiId,
+                          prefixText: '  ',
+                          suffixIcon: Icon(LucideIcons.atSign,
+                              size: 18, color: AppColors.accent),
+                          border: InputBorder.none,
+                          hintStyle: theme.textTheme.bodyMedium!
+                              .copyWith(color: AppColors.lightSubtitle),
+                        ),
+                      ),
+                    ),
+
+                  _buildPaymentOption(
+                    theme: theme,
                     icon: LucideIcons.creditCard,
-                    title: 'Credit / Debit Card',
+                    title: l10n.creditCard,
                     subtitle: '**** **** **** 4242',
                     value: 'card',
                   ),
                   const SizedBox(height: 10),
                   _buildPaymentOption(
                     theme: theme,
-                    icon: LucideIcons.smartphone,
-                    title: 'UPI',
-                    subtitle: 'Pay via UPI ID',
-                    value: 'upi',
-                  ),
-                  const SizedBox(height: 10),
-                  _buildPaymentOption(
-                    theme: theme,
                     icon: LucideIcons.banknote,
-                    title: 'Cash',
-                    subtitle: 'Pay after service',
+                    title: l10n.cash,
+                    subtitle: l10n.payAfterService,
                     value: 'cash',
                   ),
+
+                  // Cash Note
+                  if (_selectedMethod == 'cash')
+                    Container(
+                      margin: const EdgeInsets.only(top: 10),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.amber.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(LucideIcons.info,
+                              size: 18, color: Colors.amber[700]),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Pay ₹${_amount.toStringAsFixed(0)} in cash directly to the professional after service completion.',
+                              style: theme.textTheme.bodySmall!.copyWith(
+                                color: Colors.amber[800],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -125,8 +271,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: () => context.push(AppRoutes.tracking),
-                child: const Text('Pay \$45.00', style: TextStyle(fontSize: 16)),
+                onPressed: _processing ? null : _processPayment,
+                child: _processing
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        _selectedMethod == 'cash'
+                            ? 'Confirm Booking'
+                            : '${l10n.payNow} ₹${_amount.toStringAsFixed(0)}',
+                        style: const TextStyle(fontSize: 16),
+                      ),
               ),
             ),
           ),
@@ -174,7 +334,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
               child: Icon(
                 icon,
                 size: 20,
-                color: isSelected ? AppColors.accent : AppColors.lightSubtitle,
+                color:
+                    isSelected ? AppColors.accent : AppColors.lightSubtitle,
               ),
             ),
             const SizedBox(width: 14),
@@ -199,7 +360,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isSelected ? AppColors.accent : AppColors.lightSubtitle,
+                  color: isSelected
+                      ? AppColors.accent
+                      : AppColors.lightSubtitle,
                   width: isSelected ? 6 : 1.5,
                 ),
               ),

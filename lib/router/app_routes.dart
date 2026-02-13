@@ -12,11 +12,12 @@ class AppRoutes {
   static const String history = '/history';
   static const String chat = '/chat/:id';
   static const String payment = '/payment';
-  static const String tracking = '/tracking';
+  static const String tracking = '/tracking/:id';
   static const String proDashboard = '/pro-dashboard';
   static const String proJobDetails = '/pro/job-details/:id';
   static const String proActiveJob = '/pro/active';
   static const String proProfile = '/profile/pro';
   static const String offerServices = '/offers';
-  static const String professionalProfile = '/professional-profile/:proId'; // New Route
+  static const String professionalProfile = '/professional-profile/:proId';
+  static const String matchedPros = '/matched-pros';
 }
