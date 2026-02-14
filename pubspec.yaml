@@ -33,7 +33,6 @@ dependencies:
   flutter_rating_bar: ^4.0.1
   image_picker: ^1.0.7
   record: ^5.2.0
-  record_linux: ^1.2.0
   audioplayers: ^6.0.0
   permission_handler: ^11.3.1
   firebase_core: ^3.0.0
@@ -41,6 +40,10 @@ dependencies:
   flutter_local_notifications: ^16.3.3
   flutter_stripe: ^10.1.10
   http: ^1.6.0
+  record_linux: ^1.2.0
+
+dependency_overrides:
+  record_linux: ^1.2.0
 
 dev_dependencies:
   flutter_test:
