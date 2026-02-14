@@ -66,8 +66,9 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
 
     _debounce?.cancel();
     if (text.trim().length < 3) return; // Don't validate very short input
-
-    _debounce = Timer(const Duration(milliseconds: 800), () {
+    
+    // Increased debounce to 2.5s as requested
+    _debounce = Timer(const Duration(milliseconds: 2500), () {
       _validateDescription(text.trim());
     });
   }
@@ -154,6 +155,14 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
        return;
     }
 
+    // If validation hasn't run yet or is pending, run it now
+    if (_isDescriptionValid == null || _isValidating) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Validating description...')),
+      );
+      await _validateDescription(_descriptionController.text);
+    }
+    
     // Block if AI said description is invalid
     if (_isDescriptionValid == false) {
       ScaffoldMessenger.of(context).showSnackBar(
