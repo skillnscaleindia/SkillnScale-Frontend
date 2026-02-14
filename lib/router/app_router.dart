@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:service_connect/screens/auth/customer_signup_screen.dart';
 import 'package:service_connect/screens/auth/professional_signup_screen.dart';
+import 'package:service_connect/screens/auth/otp_verification_screen.dart';
 import 'package:service_connect/screens/auth/sign_in_screen.dart';
 import 'package:service_connect/screens/customer/booking_history_screen.dart';
 import 'package:service_connect/screens/customer/chat_screen.dart';
@@ -49,6 +50,16 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.proSignup,
           builder: (context, state) => const ProfessionalSignupScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.otpVerification,
+          builder: (context, state) {
+            final data = state.extra as Map<String, dynamic>;
+            return OTPVerificationScreen(
+              phone: data['phone'],
+              deliveryMethod: data['deliveryMethod'],
+            );
+          },
         ),
         ShellRoute(
           builder: (context, state, child) => CustomerShell(child: child),

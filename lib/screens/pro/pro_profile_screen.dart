@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
+import 'package:service_connect/services/auth_service.dart';
 import 'package:service_connect/router/app_routes.dart';
 import 'package:service_connect/theme/app_colors.dart';
 
-class ProProfileScreen extends StatelessWidget {
+class ProProfileScreen extends ConsumerWidget {
   const ProProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final authService = ref.read(authServiceProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
@@ -18,6 +21,52 @@ class ProProfileScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            // Profile Header (New)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: theme.colorScheme.outline.withOpacity(0.12)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: AppColors.accent.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Icon(LucideIcons.user, color: AppColors.accent, size: 28),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          authService.userName ?? 'Professional',
+                          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          (authService.userEmail != null && authService.userEmail!.isNotEmpty)
+                              ? authService.userEmail!
+                              : authService.userPhone ?? '',
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
             // Earnings Card
             Container(
               width: double.infinity,

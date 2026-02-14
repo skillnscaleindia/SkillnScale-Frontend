@@ -9,6 +9,7 @@ import 'package:service_connect/theme/app_theme.dart';
 import 'package:service_connect/services/auth_service.dart';
 import 'package:service_connect/l10n/app_localizations.dart';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
 // Locale provider for language switching
@@ -17,9 +18,11 @@ final localeProvider = StateProvider<Locale>((ref) => const Locale('en'));
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Stripe
-  Stripe.publishableKey = 'pk_test_mock_publishable_key';
-  await Stripe.instance.applySettings();
+  // Initialize Stripe (Mobile only)
+  if (!kIsWeb) {
+    Stripe.publishableKey = 'pk_test_mock_publishable_key';
+    await Stripe.instance.applySettings();
+  }
 
   // Initialize Auth Persistence
   final container = ProviderContainer();

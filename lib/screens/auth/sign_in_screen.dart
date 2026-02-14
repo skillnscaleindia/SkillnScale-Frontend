@@ -16,13 +16,13 @@ class SignInScreen extends ConsumerStatefulWidget {
 
 class _SignInScreenState extends ConsumerState<SignInScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _identifierController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -30,7 +30,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   Future<void> _signIn() async {
     if (_formKey.currentState!.validate()) {
       await ref.read(authControllerProvider.notifier).signIn(
-            _emailController.text.trim(),
+            _identifierController.text.trim(),
             _passwordController.text,
           );
     }
@@ -132,16 +132,21 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 8),
-                    Text('Email', style: theme.textTheme.titleMedium),
+                    Text('Email or Phone Number', style: theme.textTheme.titleMedium),
                     const SizedBox(height: 8),
                     TextFormField(
-                      controller: _emailController,
+                      controller: _identifierController,
                       decoration: const InputDecoration(
-                        hintText: 'Enter your email',
-                        prefixIcon: Icon(LucideIcons.mail, size: 20),
+                        hintText: 'Enter email or phone',
+                        prefixIcon: Icon(LucideIcons.user, size: 20),
                       ),
-                      validator: (v) =>
-                          (v == null || !v.contains('@')) ? 'Valid email required' : null,
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Identifier required';
+                        final isEmail = v.contains('@');
+                        final isPhone = RegExp(r'^\d{10,15}$').hasMatch(v);
+                        if (!isEmail && !isPhone) return 'Enter valid email or phone';
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 20),
                     Text('Password', style: theme.textTheme.titleMedium),

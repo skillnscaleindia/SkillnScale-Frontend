@@ -116,6 +116,7 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
         description: _descriptionController.text,
         location: address,
         scheduledDate: scheduledDate,
+        urgency: _isImmediate ? 'immediate' : 'scheduled',
       );
       
       if (!mounted) return;

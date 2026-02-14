@@ -39,7 +39,7 @@ class DataService {
     required String description,
     required String location,
     required DateTime scheduledDate,
-    String urgency = 'normal',
+    String urgency = 'immediate',
   }) async {
     try {
       final apiClient = _ref.read(apiClientProvider);

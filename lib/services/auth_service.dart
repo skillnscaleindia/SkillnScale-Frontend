@@ -26,6 +26,7 @@ class AuthService {
   static const String _userRoleKey = 'userRole';
   static const String _userNameKey = 'userName';
   static const String _userEmailKey = 'userEmail';
+  static const String _userPhoneKey = 'userPhone';
   static const String _userIdKey = 'userId';
   static const String _homeAddressKey = 'homeAddress';
   static const String _workAddressKey = 'workAddress';
@@ -34,6 +35,7 @@ class AuthService {
   String get userRole => _prefs?.getString(_userRoleKey) ?? 'customer';
   String? get userName => _prefs?.getString(_userNameKey);
   String? get userEmail => _prefs?.getString(_userEmailKey);
+  String? get userPhone => _prefs?.getString(_userPhoneKey);
   String? get userId => _prefs?.getString(_userIdKey);
 
   Future<void> login(String role) async {
@@ -45,13 +47,13 @@ class AuthService {
     _ref.read(userRoleProvider.notifier).state = userRoleEnum;
   }
 
-  Future<UserRole> signIn(String email, String password) async {
+  Future<UserRole> signIn(String identifier, String password) async {
     try {
       final apiClient = _ref.read(apiClientProvider);
 
       // 1. Login to get Token
       final response = await apiClient.client.post('/auth/login/json', data: {
-        'email': email,
+        'email': identifier, // identifier can be email or phone
         'password': password,
       });
 
@@ -83,6 +85,7 @@ class AuthService {
       await login(frontendRole);
       await _prefs?.setString(_userNameKey, userData['full_name'] ?? 'User');
       await _prefs?.setString(_userEmailKey, userData['email'] ?? '');
+      await _prefs?.setString(_userPhoneKey, userData['phone'] ?? '');
       await _prefs?.setString(_userIdKey, userData['id'].toString());
 
       return frontendRole == 'professional' ? UserRole.pro : UserRole.customer;
@@ -97,24 +100,34 @@ class AuthService {
   }
 
   Future<void> signUp({
-    required String email,
+    required String phone,
     required String password,
     required String fullName,
     required String role, // 'customer' or 'pro'
+    String? email,
+    String? serviceCategory, // for pros
+    String? bio, // for pros
+    String deliveryMethod = 'sms',
   }) async {
     try {
       final apiClient = _ref.read(apiClientProvider);
       
-      // 1. Create User
-      await apiClient.client.post('/auth/signup', data: {
-        'email': email,
+      final endpoint = role == 'pro' ? '/auth/signup/professional' : '/auth/signup/customer';
+      
+      final data = {
+        'phone': phone,
         'password': password,
         'full_name': fullName,
-        'role': role,
-      });
+        'email': email,
+        'delivery_method': deliveryMethod,
+      };
 
-      // 2. Auto Login after signup
-      await signIn(email, password);
+      if (role == 'pro') {
+        data['service_category'] = serviceCategory ?? '';
+        data['bio'] = bio ?? '';
+      }
+
+      await apiClient.client.post(endpoint, data: data);
     } on DioException catch (e) {
       if (e.response != null) {
         throw Exception(e.response?.data['detail'] ?? 'Signup failed');
@@ -122,6 +135,48 @@ class AuthService {
       throw Exception('Network error: ${e.message}');
     } catch (e) {
       throw Exception('Signup failed: $e');
+    }
+  }
+
+  Future<void> verifyOtp(String phone, String otpCode) async {
+    try {
+      final apiClient = _ref.read(apiClientProvider);
+
+      final response = await apiClient.client.post('/auth/verify-otp', data: {
+        'phone': phone,
+        'otp_code': otpCode,
+      });
+
+      final tokens = response.data['tokens'];
+      final userData = response.data['user'];
+
+      await apiClient.saveToken(tokens['access_token'], tokens['refresh_token']);
+
+      final backendRole = userData['role'];
+      final frontendRole = backendRole == 'pro' ? 'professional' : 'customer';
+
+      final profile = UserProfile(
+        id: userData['id'].toString(),
+        userType: frontendRole,
+        fullName: userData['full_name'] ?? 'User',
+        email: userData['email'],
+        phone: userData['phone'],
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      await login(frontendRole);
+      await _prefs?.setString(_userNameKey, userData['full_name'] ?? 'User');
+      await _prefs?.setString(_userEmailKey, userData['email'] ?? '');
+      await _prefs?.setString(_userPhoneKey, userData['phone'] ?? '');
+      await _prefs?.setString(_userIdKey, userData['id'].toString());
+    } on DioException catch (e) {
+      if (e.response != null) {
+        throw Exception(e.response?.data['detail'] ?? 'OTP Verification failed');
+      }
+      throw Exception('Network error: ${e.message}');
+    } catch (e) {
+      throw Exception('Verification failed: $e');
     }
   }
 

@@ -67,7 +67,9 @@ class CustomerProfileScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          authService.userEmail ?? '',
+                          (authService.userEmail != null && authService.userEmail!.isNotEmpty)
+                              ? authService.userEmail!
+                              : authService.userPhone ?? '',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.7),
                             fontSize: 13,

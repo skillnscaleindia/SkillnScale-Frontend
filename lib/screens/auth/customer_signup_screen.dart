@@ -25,6 +25,7 @@ class _CustomerSignupScreenState extends ConsumerState<CustomerSignupScreen> {
   bool _isLoading = false;
   String? _gender;
   DateTime? _dateOfBirth;
+  String _deliveryMethod = 'sms';
 
   @override
   void dispose() {
@@ -74,12 +75,19 @@ class _CustomerSignupScreenState extends ConsumerState<CustomerSignupScreen> {
       setState(() => _isLoading = true);
       try {
         await ref.read(authServiceProvider).signUp(
-          email: _emailController.text.trim(),
+          phone: _phoneController.text.trim(),
           password: _passwordController.text,
           fullName: _fullNameController.text.trim(),
+          email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
           role: 'customer',
+          deliveryMethod: _deliveryMethod,
         );
-        if (mounted) context.go(AppRoutes.home);
+        if (mounted) {
+          context.push(AppRoutes.otpVerification, extra: {
+            'phone': _phoneController.text.trim(),
+            'deliveryMethod': _deliveryMethod,
+          });
+        }
       } catch (e) {
         if (mounted) {
            ScaffoldMessenger.of(context).showSnackBar(
@@ -185,10 +193,9 @@ class _CustomerSignupScreenState extends ConsumerState<CustomerSignupScreen> {
                         hintText: 'Enter your email',
                         prefixIcon: Icon(LucideIcons.mail, size: 20),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty || !value.contains('@')) {
-                          return 'Please enter a valid email';
-                        }
+                    validator: (value) {
+                        if (value == null || value.isEmpty) return null;
+                        if (!value.contains('@')) return 'Invalid email';
                         return null;
                       },
                     ),
@@ -224,7 +231,85 @@ class _CustomerSignupScreenState extends ConsumerState<CustomerSignupScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
+                    Text('OTP Delivery Method', style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setState(() => _deliveryMethod = 'sms'),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: _deliveryMethod == 'sms' 
+                                  ? AppColors.accent.withOpacity(0.1) 
+                                  : Colors.transparent,
+                                border: Border.all(
+                                  color: _deliveryMethod == 'sms' 
+                                    ? AppColors.accent 
+                                    : Colors.grey.shade300,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    LucideIcons.phone, 
+                                    color: _deliveryMethod == 'sms' ? AppColors.accent : Colors.grey,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'SMS',
+                                    style: TextStyle(
+                                      color: _deliveryMethod == 'sms' ? AppColors.accent : Colors.grey,
+                                      fontWeight: _deliveryMethod == 'sms' ? FontWeight.bold : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setState(() => _deliveryMethod = 'whatsapp'),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: _deliveryMethod == 'whatsapp' 
+                                  ? const Color(0xFF25D366).withOpacity(0.1) 
+                                  : Colors.transparent,
+                                border: Border.all(
+                                  color: _deliveryMethod == 'whatsapp' 
+                                    ? const Color(0xFF25D366) 
+                                    : Colors.grey.shade300,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    LucideIcons.messageSquare, 
+                                    color: _deliveryMethod == 'whatsapp' ? const Color(0xFF25D366) : Colors.grey,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'WhatsApp',
+                                    style: TextStyle(
+                                      color: _deliveryMethod == 'whatsapp' ? const Color(0xFF25D366) : Colors.grey,
+                                      fontWeight: _deliveryMethod == 'whatsapp' ? FontWeight.bold : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
                     Row(
                       children: [
                         Expanded(

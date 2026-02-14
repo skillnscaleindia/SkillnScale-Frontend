@@ -20,4 +20,5 @@ class AppRoutes {
   static const String offerServices = '/offers';
   static const String professionalProfile = '/professional-profile/:proId';
   static const String matchedPros = '/matched-pros';
+  static const String otpVerification = '/otp-verification';
 }

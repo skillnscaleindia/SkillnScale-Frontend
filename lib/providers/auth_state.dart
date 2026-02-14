@@ -34,10 +34,10 @@ class AuthController extends StateNotifier<AuthState> {
 
   AuthController(this._ref) : super(AuthState());
 
-  Future<void> signIn(String email, String password) async {
+  Future<void> signIn(String identifier, String password) async {
     state = state.copyWith(status: AuthStatus.loading);
     try {
-      final userRole = await _ref.read(authServiceProvider).signIn(email, password);
+      final userRole = await _ref.read(authServiceProvider).signIn(identifier, password);
       _ref.read(userRoleProvider.notifier).state = userRole;
       state = state.copyWith(status: AuthStatus.authenticated, errorMessage: null);
     } catch (e) {
