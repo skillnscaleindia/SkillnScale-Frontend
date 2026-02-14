@@ -37,7 +37,7 @@ dependencies:
   permission_handler: ^11.3.1
   firebase_core: ^3.0.0
   firebase_messaging: ^15.0.0
-  flutter_local_notifications: ^16.3.3
+  flutter_local_notifications: ^17.0.0
   flutter_stripe: ^10.1.10
   http: ^1.6.0
   record_linux: ^1.2.0
