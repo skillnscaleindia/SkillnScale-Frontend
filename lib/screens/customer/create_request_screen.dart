@@ -22,7 +22,7 @@ class CreateRequestScreen extends ConsumerStatefulWidget {
 class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
   final _descriptionController = TextEditingController();
   DateTime? _selectedDate;
-  TimeOfDay? _selectedTime;
+  String? _selectedTimeSlot;
   bool _isImmediate = true;
   final List<String> _photos = [];
   bool _hasChanges = false;
@@ -49,17 +49,13 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
     }
   }
 
-  Future<void> _pickTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-    );
-    if (picked != null) {
-      setState(() {
-        _selectedTime = picked;
-        _hasChanges = true;
-      });
-    }
+  // 1-hour time slots from 8 AM to 8 PM
+  static const List<int> _slotStartHours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+
+  String _slotLabel(int hour) {
+    final h = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    final suffix = hour >= 12 ? 'PM' : 'AM';
+    return '$h $suffix';
   }
 
   Future<void> _pickPhoto() async {
@@ -106,8 +102,10 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
               _selectedDate?.year ?? DateTime.now().year,
               _selectedDate?.month ?? DateTime.now().month,
               _selectedDate?.day ?? DateTime.now().day,
-              _selectedTime?.hour ?? 9,
-              _selectedTime?.minute ?? 0,
+              _selectedTimeSlot != null
+                  ? _slotStartHours.firstWhere((h) => _slotLabel(h) == _selectedTimeSlot, orElse: () => 9)
+                  : 9,
+              0,
             );
 
       final result = await ref.read(dataServiceProvider).createServiceRequest(
@@ -252,28 +250,35 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: InkWell(
-                        onTap: _pickTime,
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            prefixIcon: Icon(LucideIcons.clock, size: 20),
-                          ),
-                          child: Text(
-                            _selectedTime != null
-                                ? _selectedTime!.format(context)
-                                : 'Select Time',
-                            style: theme.textTheme.bodyMedium!.copyWith(
-                              color: _selectedTime != null
-                                  ? theme.colorScheme.onSurface
-                                  : AppColors.lightSubtitle,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                     const SizedBox(width: 12),
                   ],
+                ),
+                const SizedBox(height: 12),
+                Text('Select Time Slot', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _slotStartHours.map((hour) {
+                    final label = _slotLabel(hour);
+                    final isSelected = _selectedTimeSlot == label;
+                    return ChoiceChip(
+                      label: Text(label),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(() {
+                          _selectedTimeSlot = selected ? label : null;
+                          _hasChanges = true;
+                        });
+                      },
+                      selectedColor: AppColors.accent,
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : theme.colorScheme.onSurface,
+                        fontSize: 12,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                      ),
+                    );
+                  }).toList(),
                 ),
               ],
               const SizedBox(height: 32),

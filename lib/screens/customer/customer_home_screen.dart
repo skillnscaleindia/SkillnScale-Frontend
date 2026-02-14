@@ -132,7 +132,7 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Hello, User 👋',
+                              'Hello, ${ref.read(authServiceProvider).userName ?? 'User'} 👋',
                               style: theme.textTheme.titleLarge,
                             ),
                             const SizedBox(height: 2),
