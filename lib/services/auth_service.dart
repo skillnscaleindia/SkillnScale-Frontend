@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/dio.dart';
 import '../providers/user_provider.dart';
 import 'api_client.dart';
@@ -13,7 +12,6 @@ final authServiceProvider = Provider<AuthService>((ref) {
 class AuthService {
   final Ref _ref;
   SharedPreferences? _prefs;
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   AuthService(this._ref);
 
@@ -51,9 +49,9 @@ class AuthService {
     try {
       final apiClient = _ref.read(apiClientProvider);
 
-      // 1. Login to get Token
+      // 1. Login with phone + password
       final response = await apiClient.client.post('/auth/login/json', data: {
-        'email': identifier, // identifier can be email or phone
+        'phone': identifier,
         'password': password,
       });
 
@@ -71,7 +69,7 @@ class AuthService {
       final backendRole = userData['role'];
       final frontendRole = backendRole == 'pro' ? 'professional' : 'customer';
 
-      // Create a minimal UserProfile from backend data
+      // Map backend data
       final profile = UserProfile(
         id: userData['id'].toString(),
         userType: frontendRole,

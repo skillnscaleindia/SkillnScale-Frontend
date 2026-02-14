@@ -16,13 +16,13 @@ class SignInScreen extends ConsumerStatefulWidget {
 
 class _SignInScreenState extends ConsumerState<SignInScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _identifierController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _identifierController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -30,7 +30,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   Future<void> _signIn() async {
     if (_formKey.currentState!.validate()) {
       await ref.read(authControllerProvider.notifier).signIn(
-            _identifierController.text.trim(),
+            _phoneController.text.trim(),
             _passwordController.text,
           );
     }
@@ -49,7 +49,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       } else if (next.status == AuthStatus.error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(next.errorMessage ?? 'An unknown error occurred.'),
+            content: Text(next.errorMessage ?? 'Login failed. Please try again.'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -83,21 +83,16 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Back button
                 GestureDetector(
                   onTap: () => context.pop(),
                   child: Container(
-                    width: 40,
-                    height: 40,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
-                      Icons.arrow_back,
-                      color: Colors.white,
-                      size: 20,
-                    ),
+                    child: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -112,10 +107,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Sign in to continue',
+                  'Sign in with your phone number',
                   style: TextStyle(
                     fontSize: 15,
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.white.withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -132,24 +127,24 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 8),
-                    Text('Email or Phone Number', style: theme.textTheme.titleMedium),
+                    Text('Phone Number', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
                     TextFormField(
-                      controller: _identifierController,
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
                       decoration: const InputDecoration(
-                        hintText: 'Enter email or phone',
-                        prefixIcon: Icon(LucideIcons.user, size: 20),
+                        hintText: 'Enter 10-digit mobile number',
+                        prefixIcon: Icon(LucideIcons.phone, size: 20),
+                        prefixText: '+91 ',
                       ),
                       validator: (v) {
-                        if (v == null || v.isEmpty) return 'Identifier required';
-                        final isEmail = v.contains('@');
-                        final isPhone = RegExp(r'^\d{10,15}$').hasMatch(v);
-                        if (!isEmail && !isPhone) return 'Enter valid email or phone';
+                        if (v == null || v.trim().isEmpty) return 'Phone number is required';
+                        if (!RegExp(r'^\d{10}$').hasMatch(v.trim())) return 'Enter a valid 10-digit number';
                         return null;
                       },
                     ),
                     const SizedBox(height: 20),
-                    Text('Password', style: theme.textTheme.titleMedium),
+                    Text('Password', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _passwordController,
@@ -167,16 +162,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         ),
                       ),
                       validator: (v) =>
-                          (v == null || v.length < 6) ? 'Min 6 chars' : null,
+                          (v == null || v.length < 6) ? 'Min 6 characters' : null,
                     ),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {},
-                        child: const Text('Forgot Password?'),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 24),
                     SizedBox(
                       height: 56,
                       child: ElevatedButton(
@@ -190,29 +178,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text('Sign In', style: TextStyle(fontSize: 16)),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    // Divider
-                    Row(
-                      children: [
-                        Expanded(child: Divider(color: theme.colorScheme.outline.withOpacity(0.3))),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text('or', style: theme.textTheme.bodySmall),
-                        ),
-                        Expanded(child: Divider(color: theme.colorScheme.outline.withOpacity(0.3))),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // Social buttons
-                    SizedBox(
-                      height: 56,
-                      child: OutlinedButton.icon(
-                        onPressed: () {},
-                        icon: const Icon(LucideIcons.smartphone, size: 20),
-                        label: const Text('Continue with Phone'),
+                            : const Text('Sign In', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                       ),
                     ),
                   ],

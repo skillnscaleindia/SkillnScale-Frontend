@@ -1,10 +1,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
-import 'package:service_connect/providers/user_provider.dart';
 import 'package:service_connect/router/app_routes.dart';
 import 'package:service_connect/theme/app_colors.dart';
 import 'package:service_connect/services/auth_service.dart';
@@ -19,55 +17,17 @@ class CustomerSignupScreen extends ConsumerStatefulWidget {
 class _CustomerSignupScreenState extends ConsumerState<CustomerSignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
-  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  String? _gender;
-  DateTime? _dateOfBirth;
-  String _deliveryMethod = 'sms';
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
     _fullNameController.dispose();
-    _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
-  }
-
-  Future<void> _selectDate() async {
-    DateTime tempDate = _dateOfBirth ?? DateTime.now();
-    await showCupertinoModalPopup(
-      context: context,
-      builder: (context) => Container(
-        height: 280,
-        color: Theme.of(context).scaffoldBackgroundColor,
-        child: Column(
-          children: [
-            SizedBox(
-              height: 200,
-              child: CupertinoDatePicker(
-                mode: CupertinoDatePickerMode.date,
-                initialDateTime: tempDate,
-                minimumDate: DateTime(1920),
-                maximumDate: DateTime.now(),
-                onDateTimeChanged: (val) {
-                  tempDate = val;
-                },
-              ),
-            ),
-            CupertinoButton(
-              child: const Text('Confirm'),
-              onPressed: () {
-                setState(() => _dateOfBirth = tempDate);
-                Navigator.of(context).pop();
-              },
-            )
-          ],
-        ),
-      ),
-    );
   }
 
   Future<void> _signup() async {
@@ -78,20 +38,19 @@ class _CustomerSignupScreenState extends ConsumerState<CustomerSignupScreen> {
           phone: _phoneController.text.trim(),
           password: _passwordController.text,
           fullName: _fullNameController.text.trim(),
-          email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
           role: 'customer',
-          deliveryMethod: _deliveryMethod,
+          deliveryMethod: 'whatsapp',
         );
         if (mounted) {
           context.push(AppRoutes.otpVerification, extra: {
             'phone': _phoneController.text.trim(),
-            'deliveryMethod': _deliveryMethod,
+            'deliveryMethod': 'whatsapp',
           });
         }
       } catch (e) {
         if (mounted) {
            ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(content: Text('Signup failed: $e')),
+             SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
            );
         }
       } finally {
@@ -129,13 +88,13 @@ class _CustomerSignupScreenState extends ConsumerState<CustomerSignupScreen> {
                 GestureDetector(
                   onTap: () => context.pop(),
                   child: Container(
-                    width: 40,
-                    height: 40,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                    child: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -150,10 +109,10 @@ class _CustomerSignupScreenState extends ConsumerState<CustomerSignupScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Join thousands of happy customers',
+                  'Quick signup — just 3 simple steps',
                   style: TextStyle(
                     fontSize: 15,
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                   ),
                 ),
               ],
@@ -169,236 +128,116 @@ class _CustomerSignupScreenState extends ConsumerState<CustomerSignupScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 8),
-                    Text('Full Name', style: theme.textTheme.titleMedium),
+                    // Name
+                    Text('Your Name', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _fullNameController,
+                      textCapitalization: TextCapitalization.words,
                       decoration: const InputDecoration(
                         hintText: 'Enter your full name',
                         prefixIcon: Icon(LucideIcons.user, size: 20),
                       ),
                       validator: (value) {
-                        if (value == null || value.isEmpty) {
+                        if (value == null || value.trim().isEmpty) {
                           return 'Please enter your name';
                         }
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
-                    Text('Email', style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 20),
+                    // Phone
+                    Text('Phone Number', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
                     TextFormField(
-                      controller: _emailController,
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
                       decoration: const InputDecoration(
-                        hintText: 'Enter your email',
-                        prefixIcon: Icon(LucideIcons.mail, size: 20),
+                        hintText: 'Enter 10-digit mobile number',
+                        prefixIcon: Icon(LucideIcons.phone, size: 20),
+                        prefixText: '+91 ',
                       ),
-                    validator: (value) {
-                        if (value == null || value.isEmpty) return null;
-                        if (!value.contains('@')) return 'Invalid email';
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter your phone number';
+                        }
+                        if (!RegExp(r'^\d{10}$').hasMatch(value.trim())) {
+                          return 'Enter a valid 10-digit number';
+                        }
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
-                    Text('Password', style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 20),
+                    // Password
+                    Text('Password', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _passwordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        hintText: 'Create a password',
-                        prefixIcon: Icon(LucideIcons.lock, size: 20),
+                      obscureText: _obscurePassword,
+                      decoration: InputDecoration(
+                        hintText: 'Create a password (min 6 chars)',
+                        prefixIcon: const Icon(LucideIcons.lock, size: 20),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword ? LucideIcons.eye : LucideIcons.eyeOff,
+                            size: 20,
+                          ),
+                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                        ),
                       ),
                       validator: (value) {
                          if (value == null || value.length < 6) return 'Min 6 characters';
                          return null;
                       },
                     ),
-                    const SizedBox(height: 16),
-                    Text('Phone Number', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _phoneController,
-                      decoration: const InputDecoration(
-                        hintText: 'Enter your phone number',
-                        prefixIcon: Icon(LucideIcons.phone, size: 20),
-                      ),
-                      keyboardType: TextInputType.phone,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your phone number';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    Text('OTP Delivery Method', style: theme.textTheme.titleMedium),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => setState(() => _deliveryMethod = 'sms'),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                color: _deliveryMethod == 'sms' 
-                                  ? AppColors.accent.withOpacity(0.1) 
-                                  : Colors.transparent,
-                                border: Border.all(
-                                  color: _deliveryMethod == 'sms' 
-                                    ? AppColors.accent 
-                                    : Colors.grey.shade300,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Column(
-                                children: [
-                                  Icon(
-                                    LucideIcons.phone, 
-                                    color: _deliveryMethod == 'sms' ? AppColors.accent : Colors.grey,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'SMS',
-                                    style: TextStyle(
-                                      color: _deliveryMethod == 'sms' ? AppColors.accent : Colors.grey,
-                                      fontWeight: _deliveryMethod == 'sms' ? FontWeight.bold : FontWeight.normal,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                    // WhatsApp OTP Info
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF25D366).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF25D366).withValues(alpha: 0.3)),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(LucideIcons.messageSquare, color: Color(0xFF25D366), size: 20),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'We will send OTP on your WhatsApp to verify',
+                              style: TextStyle(fontSize: 13, color: Color(0xFF25D366), fontWeight: FontWeight.w500),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => setState(() => _deliveryMethod = 'whatsapp'),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                color: _deliveryMethod == 'whatsapp' 
-                                  ? const Color(0xFF25D366).withOpacity(0.1) 
-                                  : Colors.transparent,
-                                border: Border.all(
-                                  color: _deliveryMethod == 'whatsapp' 
-                                    ? const Color(0xFF25D366) 
-                                    : Colors.grey.shade300,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Column(
-                                children: [
-                                  Icon(
-                                    LucideIcons.messageSquare, 
-                                    color: _deliveryMethod == 'whatsapp' ? const Color(0xFF25D366) : Colors.grey,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'WhatsApp',
-                                    style: TextStyle(
-                                      color: _deliveryMethod == 'whatsapp' ? const Color(0xFF25D366) : Colors.grey,
-                                      fontWeight: _deliveryMethod == 'whatsapp' ? FontWeight.bold : FontWeight.normal,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Date of Birth', style: theme.textTheme.titleMedium),
-                              const SizedBox(height: 8),
-                              InkWell(
-                                onTap: _selectDate,
-                                child: InputDecorator(
-                                  decoration: const InputDecoration(
-                                    prefixIcon: Icon(LucideIcons.calendar, size: 20),
-                                  ),
-                                  child: Text(
-                                    _dateOfBirth == null
-                                        ? 'Select Date'
-                                        : '${_dateOfBirth!.day}/${_dateOfBirth!.month}/${_dateOfBirth!.year}',
-                                    style: theme.textTheme.bodyMedium!.copyWith(
-                                      color: _dateOfBirth == null
-                                          ? AppColors.lightSubtitle
-                                          : theme.colorScheme.onSurface,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Gender', style: theme.textTheme.titleMedium),
-                              const SizedBox(height: 8),
-                              DropdownButtonFormField<String>(
-                                decoration: const InputDecoration(
-                                  prefixIcon: Icon(LucideIcons.users, size: 20),
-                                ),
-                                value: _gender,
-                                hint: Text('Select',
-                                    style: TextStyle(color: AppColors.lightSubtitle)),
-                                items: ['Male', 'Female', 'Other']
-                                    .map((label) => DropdownMenuItem(
-                                          value: label,
-                                          child: Text(label),
-                                        ))
-                                    .toList(),
-                                onChanged: (value) {
-                                  setState(() => _gender = value);
-                                },
-                                validator: (value) {
-                                  if (value == null) return 'Required';
-                                  return null;
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 32),
+                    // Submit
                     SizedBox(
                       height: 56,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _signup,
                         child: _isLoading 
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('Create Account', style: TextStyle(fontSize: 16)),
+                          : const Text('Create Account', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    const SizedBox(height: 20),
+                    // Sign In link
+                    Center(
                       child: RichText(
-                        textAlign: TextAlign.center,
                         text: TextSpan(
-                          style: theme.textTheme.bodySmall,
+                          style: theme.textTheme.bodyMedium,
                           children: <TextSpan>[
-                            const TextSpan(
-                                text: 'By signing up, you agree to our '),
+                            const TextSpan(text: 'Already have an account? '),
                             TextSpan(
-                              text: 'Terms and Conditions',
-                              style: TextStyle(
-                                decoration: TextDecoration.underline,
+                              text: 'Sign In',
+                              style: const TextStyle(
                                 color: AppColors.accent,
+                                fontWeight: FontWeight.w600,
                               ),
-                              recognizer: TapGestureRecognizer()..onTap = () {},
+                              recognizer: TapGestureRecognizer()..onTap = () => context.push(AppRoutes.login),
                             ),
                           ],
                         ),
