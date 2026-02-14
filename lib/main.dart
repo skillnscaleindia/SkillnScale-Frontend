@@ -18,10 +18,15 @@ final localeProvider = StateProvider<Locale>((ref) => const Locale('en'));
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Stripe (Mobile only)
+  // Initialize Stripe (Mobile only) — wrapped in try-catch
+  // so a bad/missing key doesn't crash the whole app
   if (!kIsWeb) {
-    Stripe.publishableKey = 'pk_test_mock_publishable_key';
-    await Stripe.instance.applySettings();
+    try {
+      Stripe.publishableKey = 'pk_test_mock_publishable_key';
+      await Stripe.instance.applySettings();
+    } catch (e) {
+      debugPrint('⚠️ Stripe init failed (non-fatal): $e');
+    }
   }
 
   // Initialize Auth Persistence
