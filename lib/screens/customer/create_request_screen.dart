@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -9,6 +10,18 @@ import 'package:service_connect/services/data_service.dart';
 import 'package:service_connect/services/auth_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:service_connect/services/upload_service.dart';
+
+// Category-specific placeholder hints
+const Map<String, String> _categoryHints = {
+  'plumbing': 'e.g., Kitchen tap is leaking and needs replacement',
+  'electrician': 'e.g., Power socket not working in the bedroom',
+  'cleaning': 'e.g., Need deep cleaning for 2BHK apartment',
+  'painting': 'e.g., Walls have cracks and need repainting',
+  'ac_repair': 'e.g., AC not cooling properly, needs gas refill',
+  'salon': 'e.g., Need a haircut and facial at home',
+  'pest_control': 'e.g., Cockroach infestation in kitchen area',
+  'carpentry': 'e.g., Wardrobe door hinge is broken',
+};
 
 class CreateRequestScreen extends ConsumerStatefulWidget {
   final ServiceCategory? category;
@@ -28,10 +41,61 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
   bool _hasChanges = false;
   bool _isSubmitting = false;
 
+  // ─── Validation state ──────────────────────────────────────────
+  Timer? _debounce;
+  bool _isValidating = false;
+  bool? _isDescriptionValid;
+  String? _validationMessage;
+  String? _validationSuggestion;
+
   @override
   void dispose() {
     _descriptionController.dispose();
+    _debounce?.cancel();
     super.dispose();
+  }
+
+  // ─── Debounced AI validation ───────────────────────────────────
+  void _onDescriptionChanged(String text) {
+    setState(() {
+      _hasChanges = true;
+      // Reset validation while typing
+      _isDescriptionValid = null;
+      _validationMessage = null;
+    });
+
+    _debounce?.cancel();
+    if (text.trim().length < 3) return; // Don't validate very short input
+
+    _debounce = Timer(const Duration(milliseconds: 800), () {
+      _validateDescription(text.trim());
+    });
+  }
+
+  Future<void> _validateDescription(String text) async {
+    if (!mounted) return;
+    setState(() => _isValidating = true);
+
+    try {
+      final result = await ref.read(dataServiceProvider).validateDescription(
+        categoryId: widget.category?.id ?? 'general',
+        description: text,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _isValidating = false;
+        _isDescriptionValid = result['is_valid'] == true;
+        _validationMessage = result['message'] as String?;
+        _validationSuggestion = result['suggestion'] as String?;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isValidating = false;
+        _isDescriptionValid = true; // Don't block on error
+      });
+    }
   }
 
   Future<void> _pickDate() async {
@@ -90,6 +154,17 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
        return;
     }
 
+    // Block if AI said description is invalid
+    if (_isDescriptionValid == false) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_validationMessage ?? 'Please enter a relevant description'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
     
     try {
@@ -146,6 +221,9 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final categoryId = widget.category?.id ?? '';
+    final hintText = _categoryHints[categoryId] ?? 'What do you need help with?';
+
     return PopScope(
       canPop: !_hasChanges,
       onPopInvoked: (didPop) async {
@@ -186,11 +264,15 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 4,
-                onChanged: (_) => setState(() => _hasChanges = true),
-                decoration: const InputDecoration(
-                  hintText: 'What do you need help with?',
+                onChanged: _onDescriptionChanged,
+                decoration: InputDecoration(
+                  hintText: hintText,
+                  hintMaxLines: 2,
+                  suffixIcon: _buildValidationIcon(),
                 ),
               ),
+              // ─── Validation feedback ───────────────────────────
+              _buildValidationFeedback(theme),
               const SizedBox(height: 24),
               // Photo Upload
               Text('Add Photos', style: theme.textTheme.titleMedium),
@@ -300,6 +382,87 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
     );
   }
 
+  // ─── Validation icon in text field ──────────────────────────────
+  Widget? _buildValidationIcon() {
+    if (_isValidating) {
+      return const Padding(
+        padding: EdgeInsets.all(14),
+        child: SizedBox(
+          width: 18, height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+    if (_isDescriptionValid == true) {
+      return const Icon(LucideIcons.checkCircle, color: Colors.green, size: 20);
+    }
+    if (_isDescriptionValid == false) {
+      return const Icon(LucideIcons.alertCircle, color: AppColors.error, size: 20);
+    }
+    return null;
+  }
+
+  // ─── Validation feedback message below text field ──────────────
+  Widget _buildValidationFeedback(ThemeData theme) {
+    if (_validationMessage == null || _validationMessage!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final isValid = _isDescriptionValid == true;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isValid
+              ? Colors.green.withOpacity(0.08)
+              : AppColors.error.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isValid
+                ? Colors.green.withOpacity(0.3)
+                : AppColors.error.withOpacity(0.3),
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              isValid ? LucideIcons.sparkles : LucideIcons.info,
+              size: 16,
+              color: isValid ? Colors.green : AppColors.error,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _validationMessage!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: isValid ? Colors.green.shade700 : AppColors.error,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  if (_validationSuggestion != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      _validationSuggestion!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.lightSubtitle,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildPhotoGrid(ThemeData theme) {
     return Wrap(
       spacing: 10,
@@ -313,7 +476,7 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
               borderRadius: BorderRadius.circular(12),
               color: AppColors.accent.withOpacity(0.1),
               image: DecorationImage(
-                image: NetworkImage('http://localhost:8000$url'),
+                image: NetworkImage(url),
                 fit: BoxFit.cover,
               ),
             ),

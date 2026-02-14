@@ -33,6 +33,27 @@ class DataService {
   }
 
   // ─── Service Requests (NEW API) ──────────────────────
+  /// Validate description using AI (Gemini) before creating request
+  Future<Map<String, dynamic>> validateDescription({
+    required String categoryId,
+    required String description,
+  }) async {
+    try {
+      final apiClient = _ref.read(apiClientProvider);
+      final response = await apiClient.client.post(
+        '/requests/validate-description',
+        data: {
+          'category_id': categoryId,
+          'description': description,
+        },
+      );
+      return Map<String, dynamic>.from(response.data);
+    } catch (e) {
+      // If validation endpoint fails, allow submission (don't block user)
+      return {'is_valid': true, 'message': '', 'suggestion': null};
+    }
+  }
+
   Future<Map<String, dynamic>> createServiceRequest({
     required String categoryId,
     required String title,
