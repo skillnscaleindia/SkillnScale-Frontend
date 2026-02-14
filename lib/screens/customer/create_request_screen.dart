@@ -394,10 +394,10 @@ class _CreateRequestScreenState extends ConsumerState<CreateRequestScreen> {
       );
     }
     if (_isDescriptionValid == true) {
-      return const Icon(LucideIcons.checkCircle, color: Colors.green, size: 20);
+      return const Icon(Icons.check_circle, color: Colors.green, size: 20);
     }
     if (_isDescriptionValid == false) {
-      return const Icon(LucideIcons.alertCircle, color: AppColors.error, size: 20);
+      return const Icon(Icons.error_outline, color: AppColors.error, size: 20);
     }
     return null;
   }
